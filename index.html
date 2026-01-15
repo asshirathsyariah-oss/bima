@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f3d3e">
+    <title>BMT BIMA - Integrated System</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src='https://meet.jit.si/external_api.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* --- STYLE DASAR & ISLAMIC THEME PROFESSIONAL --- */
+        :root { 
+            --primary: #0f3d3e; 
+            --primary-dark: #051f20;
+            --primary-gradient: linear-gradient(135deg, #0f3d3e 0%, #155e60 100%);
+            --secondary: #d4af37; /* Islamic Gold */
+            --secondary-gradient: linear-gradient(135deg, #d4af37 0%, #f3e5ab 100%);
+            --bg: #f8fbfb; 
+            --text: #2c3e50; 
+            --sidebar-width: 270px; 
+            --ornament: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIiBmaWxsLW9wYWNpdHk9IjAuMDUiPjxwYXRoIGQ9Ik0wIDIwaDIwdjIwSDBWMjB6bTIwIDBoMjB2MjBIMjBWMjB6TTAgMGgyMHYyMEgwVjB6bTIwIDBoMjB2MjBIMjBWMHoiIGZpbGw9IiMwZjNkM2UiLz48L3N2Zz4=');
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--bg); 
+            background-image: var(--ornament); 
+            color: var(--text); 
+            overflow-x: hidden; 
+            font-size: 14px; 
+            overscroll-behavior-y: contain; 
+        }
+
+        /* Scrollbar Halus */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .hidden { display: none !important; }
+        #loading-screen { display: none; } 
+
+        #sync-status { position: fixed; bottom: 20px; right: 20px; background: white; color: var(--primary); padding: 8px 20px; border-radius: 50px; font-size: 0.8rem; z-index: 9999; display: flex; align-items: center; gap: 10px; transition: 0.3s; opacity: 0; pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid var(--secondary); font-weight: 500; }
+        #sync-status.active { opacity: 1; transform: translateY(-10px); }
+
+        /* SCANNER OVERLAY */
+        #ocr-loading { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        
+        /* BINGKAI KTP */
+        .ktp-frame {
+            border: 2px dashed var(--secondary);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: rgba(212, 175, 55, 0.05);
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .ktp-frame::after {
+            content: "POSISIKAN KTP DI SINI";
+            display: block;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* GATEWAY (LOGIN PORTAL) */
+        #gateway { position: fixed; inset: 0; background: linear-gradient(135deg, #051f20 0%, #0f3d3e 100%); background-size: cover; background-position: center; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; padding: 20px; }
+        
+        /* CHAT WIDGET */
+        #chat-widget { position: fixed; bottom: 25px; left: 25px; z-index: 6000; }
+        .chat-btn { width: 55px; height: 55px; border-radius: 50%; background: #25d366; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); border: none; transition: 0.3s; }
+        .chat-btn:hover { transform: scale(1.1); }
+        .chat-box { position: absolute; bottom: 80px; left: 0; width: 320px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease; border: 1px solid #eee; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* UI COMPONENTS - SIDEBAR & MAIN */
+        .sidebar { width: var(--sidebar-width); background-color: var(--primary); background-image: var(--ornament), linear-gradient(180deg, #0f3d3e 0%, #0a2e2f 100%); color: white; height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; z-index: 1000; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 4px 0 20px rgba(0,0,0,0.1); }
+        .sidebar-brand { height: 90px; display: flex; align-items: center; padding: 0 25px; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; background: rgba(0,0,0,0.1); }
+        .sidebar-menu { flex: 1; padding: 20px 10px; overflow-y: auto; }
+        
+        .main-content { margin-left: var(--sidebar-width); flex: 1; width: calc(100% - var(--sidebar-width)); background: transparent; transition: margin 0.3s; display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.03); position: sticky; top: 0; z-index: 900; border-bottom: 2px solid var(--secondary); backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); }
+        .content-body { padding: 30px; flex: 1; padding-bottom: 80px; }
+        
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; transition:0.2s; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); letter-spacing: 0.5px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-warning { background: var(--secondary-gradient); color: #0f3d3e; font-weight: 600; }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%); color: white; }
+        .btn-ghost { background: transparent; color: var(--primary); }
+        
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; background: #fafafa; margin-bottom: 15px; transition: 0.3s; }
+        .form-control:focus { border-color: var(--secondary); background: white; box-shadow: 0 0 0 3px rgba(196, 169, 98, 0.1); }
+        
+        .menu-link { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 15px; opacity: 0.7; transition: 0.2s; font-size: 0.95rem; text-decoration: none; color: white; border-radius: 8px; margin-bottom: 5px; }
+        .menu-link:hover, .menu-link.active { background: rgba(255,255,255,0.1); opacity: 1; color: var(--secondary); transform: translateX(5px); }
+        .menu-link i { width: 25px; text-align: center; font-size: 1.1rem; }
+
+        /* TABLE */
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; white-space: nowrap; }
+        th, td { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; text-align: left; vertical-align: middle; }
+        th { background: #f9f9f9; font-weight: 600; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eee; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+
+        /* MOBILE & RESPONSIVE */
+        @media screen and (max-width: 900px) {
+            :root { --sidebar-width: 0px; }
+            .sidebar { transform: translateX(-100%); width: 280px; box-shadow: 5px 0 30px rgba(0,0,0,0.3); }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; }
+            .topbar { padding: 15px 20px; }
+            .content-body { padding: 20px; }
+            
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { margin-bottom: 15px; border: 1px solid #eee; border-radius: 10px; background: white; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+            td { border: none; padding: 10px 0; position: relative; padding-left: 40%; text-align: right; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #eee; font-size: 0.9rem; }
+            td:last-child { border-bottom: none; }
+            td:before { position: absolute; left: 0; width: 35%; white-space: nowrap; font-weight: 600; text-align: left; content: attr(data-label); color: #888; text-transform: uppercase; font-size: 0.75rem; }
+        }
+
+        #login-modal, #reset-modal, #ai-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
+        
+        /* LOGIN CARD MODERN */
+        .login-card-modern { display: flex; width: 800px; height: 450px; background: white; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); overflow: hidden; border: 1px solid var(--secondary); }
+        .login-identity { flex: 1; background: var(--primary-gradient); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center; position: relative; }
+        .login-identity::before { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: var(--ornament); opacity: 0.1; }
+        .login-form-area { flex: 1.2; padding: 30px; background: #fff; display: flex; flex-direction: column; justify-content: center; }
+        .scroll-wrapper { width: 100%; height: 100%; overflow-y: auto; padding-right: 5px; } 
+        .form-group-new { margin-bottom: 15px; width: 100%; }
+        .form-group-new label { display: block; font-size: 0.8rem; margin-bottom: 5px; color: #666; font-weight: 600; text-align: left; }
+        .form-group-new input, .form-group-new select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
+        .btn-login-gold { width: 100%; padding: 12px; background: var(--secondary); border: none; border-radius: 8px; color: #0f3d3e; font-weight: 800; cursor: pointer; letter-spacing: 1px; transition: 0.3s; box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3); margin-top: 10px; }
+        .btn-login-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(212, 175, 55, 0.4); }
+
+        @media (max-width: 768px) {
+            .login-card-modern { flex-direction: column; width: 95%; height: auto; margin: 20px auto; }
+            .login-identity { padding: 30px 20px; }
+            .login-form-area { padding: 30px 25px; width: 100%; }
+            .scroll-wrapper { padding-right: 0; }
+        }
+
+        /* PRINT STYLE */
+        .paper { background: white; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; color: black; font-family: 'Times New Roman', serif; }
+        .bank-header { display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 25px; }
+        .bank-logo { width: 80px; height: 80px; object-fit: contain; margin-right: 20px; }
+        .bank-info { flex: 1; text-align: center; }
+        .bank-info h1 { font-size: 18pt; font-weight: 900; margin: 0; text-transform: uppercase; }
+        .fin-table { width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000; }
+        .fin-table th { border: 1px solid #000; padding: 8px; background-color: #eee !important; font-weight: bold; }
+        .fin-table td { border: 1px solid #000; padding: 8px; }
+        .e-materai-box { width: 80px; height: 80px; border: 2px dashed #999; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999; text-align: center; margin-right: 10px; font-weight: bold; }
+        .doc-footer { margin-top: 30px; font-size: 10px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        #printable-area { display: none; }
+    </style>
+</head>
+<body>
+    
+    <div id="ocr-loading">
+        <div class="card" style="text-align:center; padding:30px; border-top:5px solid var(--secondary);">
+            <i class="fas fa-camera fa-spin fa-3x" style="color:var(--secondary); margin-bottom:15px;"></i>
+            <h3 style="color:white;">Sedang Memindai KTP...</h3>
+            <p style="color:#ddd;">Sistem sedang membaca data otomatis (OCR)</p>
+        </div>
+    </div>
+
+    <div id="sync-status"><i class="fas fa-check-circle"></i> Data Tersimpan</div>
+
+    <div id="ai-modal">
+        <div class="card" style="width: 100%; max-width: 400px; text-align: center; padding: 30px;">
+            <i class="fas fa-robot fa-3x" style="color:var(--primary); margin-bottom:20px;"></i>
+            <h3 style="color:var(--primary)">System Credit Scoring</h3>
+            <p>Menganalisa Risiko Kredit & Kinerja Marketing...</p>
+            <div id="ai-result" style="display:none; margin-top:20px;">
+                <div style="width:100%; height:10px; background:#eee; border-radius:10px; margin:15px 0; overflow:hidden;">
+                    <div id="ai-bar" style="height:100%; transition:width 1s;"></div>
+                </div>
+                <h2 id="ai-score" style="font-size:2.5rem; margin:10px 0;">0/100</h2>
+                <h4 id="ai-verdict" style="margin-bottom:15px;">-</h4>
+                <p id="ai-desc" style="font-size:0.8rem; color:#666;">-</p>
+                <button class="btn btn-primary" onclick="document.getElementById('ai-modal').style.display='none'" style="margin-top:15px; width:100%;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gateway" class="flex-center" style="display: flex; flex-direction: column;">
+        <div class="login-card-modern">
+            <div class="login-identity" style="padding: 10px !important; min-height: auto;">
+                <img id="gw-logo" src="https://cdn-icons-png.flaticon.com/512/2317/2317968.png" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #d4af37; box-shadow: 0 5px 15px rgba(0,0,0,0.3); background: white;" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2317/2317968.png'">
+                <h2 id="gw-nama" style="font-family: 'Amiri'; margin: 5px 0; font-size: 1.3rem; text-shadow: 0 2px 5px rgba(0,0,0,0.2);">BMT SYARIAH</h2>
+                <p id="gw-izin" style="font-size: 0.9rem; opacity: 0.9; font-style: italic;">Mitra Keuangan Syariah Terpercaya</p>
+                <div class="ornament-islamic"></div>
+            </div>
+
+            <div class="login-form-area">
+                <div class="scroll-wrapper">
+                    <h3 style="color: var(--primary); margin-bottom: 20px; font-weight: 700; text-align: center; font-family: 'Amiri';">LOGIN SISTEM</h3>
+                    
+                    <div class="form-group-new">
+                        <label>Username</label>
+                        <input type="text" id="username" placeholder="Masukkan Username">
+                    </div>
+
+                    <div class="form-group-new">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Masukkan Password">
+                    </div>
+
+                    <div class="form-group-new">
+                        <label>Pilih Unit Kerja</label>
+                        <select id="login-app-select">
+                            <option value="induk">BMT ASSHIRATH (Pusat)</option>
+                            <option value="sps">Unit Simpan Pinjam</option>
+                            <option value="kms">Unit Kendaraan</option>
+                            <option value="gadai">Unit Gadai</option>
+                            <option value="haji">Tabungan Haji & Umroh</option>
+                        </select>
+                    </div>
+
+                    <button onclick="prosesLogin()" class="btn-login-gold">MASUK SISTEM</button>
+                    
+                    <p style="font-size: 0.7rem; color: #999; margin-top: 20px; text-align: center;">
+                        Powered by <b>riafd app gallery</b> v3.5 (Realtime)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+             
+             <button onclick="openResetMenu()" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#ff8787; padding:10px 15px; border-radius:30px; font-size:0.7rem;">
+                <i class="fas fa-trash-alt"></i> RESET
+             </button>
+             
+             <button onclick="document.getElementById('modal-admin').style.display='flex'" style="background:var(--secondary); border:none; color:white; padding:10px 15px; border-radius:30px; font-size:0.7rem; font-weight:bold;">
+                <i class="fas fa-user-shield"></i> ADMIN
+            </button>
+
+            <button onclick="forceUpdatePermissions()" style="background:#9c27b0; border:2px solid white; color:white; padding:10px 20px; border-radius:30px; font-size:0.8rem; font-weight:bold; box-shadow: 0 0 10px white;">
+                <i class="fas fa-sync"></i> FIX AKSES
+            </button>
+        </div>
+        
+        <div id="chat-widget">
+            <button class="chat-btn" onclick="toggleChat()"><i class="fas fa-comments"></i></button>
+            <div id="chat-box" class="chat-box">
+                <div class="chat-header" style="background:var(--primary); color:white; padding:15px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas fa-headset"></i> Layanan Anggota</span> <i class="fas fa-times" style="cursor:pointer" onclick="toggleChat()"></i>
+                </div>
+                <div id="chat-body" class="chat-body" style="flex:1; padding:15px; overflow-y:auto; background:#f5f5f5; display:flex; flex-direction:column; gap:10px;"></div>
+                <div class="chat-footer" style="padding:15px; background:white; border-top:1px solid #eee; display:flex; gap:10px;">
+                    <input id="chat-input" class="form-control" placeholder="Tulis pesan..." style="margin:0; border-radius:20px;">
+                    <button class="btn btn-primary" style="padding:0 15px; border-radius:50%; width:45px; height:45px;" onclick="sendChat('Guest')"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+<div id="modal-admin" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 99999; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 380px; text-align: center; border-top: 4px solid #d4af37; padding: 30px;">
+        <h3 style="color:#0f3d3e; margin-bottom: 5px;">Portal Admin</h3>
+        <p style="color:#666; margin-bottom:25px; font-size:0.9rem;">Panel Kontrol Sistem</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="text" id="admin-user" class="form-control" placeholder="Username">
+            <input type="password" id="admin-pass" class="form-control" placeholder="Password">
+            
+            <button class="btn btn-primary" onclick="prosesLoginAdmin()" style="width:100%; padding:12px;">MASUK ADMIN</button>
+            <button class="btn" onclick="document.getElementById('modal-admin').style.display='none'" style="width:100%; border:1px solid #ddd;">Batal</button>
+        </div>
+    </div>
+</div>
+
+    <div id="reset-modal">
+        <div class="card" style="width: 100%; max-width: 400px; text-align: center; border-top: 5px solid #c0392b;">
+            <h3 style="color:#c0392b;">Factory Reset</h3>
+            <p style="margin-bottom: 20px;">Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="form-vertical" style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn btn-warning" onclick="wipeData('sps')" style="justify-content:center;">Hapus Data SPS</button>
+                <button class="btn btn-warning" onclick="wipeData('kms')" style="justify-content:center;">Hapus Data KMS</button>
+                <button class="btn btn-warning" onclick="wipeData('gadai')" style="justify-content:center;">Hapus Data Gadai</button>
+                <div style="height:1px; background:#ddd; margin: 10px 0;"></div>
+                <button class="btn btn-danger" onclick="wipeData('induk')" style="justify-content:center; font-weight:bold;">HAPUS TOTAL (RESET SYSTEM)</button>
+                <button class="btn" onclick="document.getElementById('reset-modal').style.display='none'" style="justify-content:center;">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="app-container hidden">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <img id="sb-logo" src="" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border: 2px solid var(--secondary);" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2317/2317968.png'">
+                <div class="hide-mini" style="line-height:1.2; margin-left:12px;">
+                    <div id="sb-nama" style="font-weight:700; font-size:1rem; color: var(--secondary);">BMT NAME</div>
+                    <small style="opacity:0.7; font-family:'Amiri'; letter-spacing:0.5px;">Integrated System</small>
+                </div>
+                <div style="margin-left:auto; display: block; md:hidden; cursor: pointer; opacity: 0.7;" onclick="toggleSidebar()"><i class="fas fa-times"></i></div>
+            </div>
+            <div id="menu-container" class="sidebar-menu"></div>
+            <div style="padding: 20px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.05);">
+                <button onclick="logoutManual()" class="btn" style="width:100%; background:rgba(255,87,87,0.15); color:#ff8787; justify-content: flex-start; border:1px solid rgba(255,87,87,0.2);"><i class="fas fa-sign-out-alt"></i> <span class="hide-mini">Keluar</span></button>
+            </div>
+        </aside>
+        <main class="main-content">
+            <header class="topbar">
+                <div style="display:flex; align-items:center; gap: 15px;">
+                    <button class="btn-ghost" onclick="toggleSidebar()" style="color:var(--primary); background:transparent; border:none; font-size:1.2rem; cursor:pointer;">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 id="page-title" style="color:var(--primary); margin:0; font-size: 1.3rem; font-family:'Amiri'; font-weight:bold;">Dashboard</h2>
+                </div>
+                <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                    <div style="text-align:right;">
+                        <div id="user-role-display" style="font-weight:bold; font-size: 0.85rem; color:var(--primary);">Role</div>
+                        <small id="user-name-display" style="color:#777; font-size:0.75rem;">User</small>
+                    </div>
+                    <img id="header-profile-pic" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width:35px; height:35px; border-radius:50%; border:1px solid #eee;">
+                </div>
+            </header>
+            <div id="content-body" class="content-body"></div>
+        </main>
+    </div>
+
+    <div id="printable-area"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRUW85urB6uuAyslzX12mIcRpVlu4g9sA",
+            authDomain: "bmt-system.firebaseapp.com",
+            databaseURL: "https://bmt-system-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bmt-system",
+            storageBucket: "bmt-system.firebasestorage.app",
+            messagingSenderId: "623210817818",
+            appId: "1:623210817818:web:63e94ba9ba69a0a98c64a3"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        const defaultUsers = [
+    {
+        user:'ketua', role:'ketua', app:'induk', password:'123', 
+        photo:'https://cdn-icons-png.flaticon.com/512/3135/3135768.png' // Foto Ketua
+    }, 
+    {
+        user:'haura app', role:'admin', app:'induk', password:'12345', 
+        photo:'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' // Foto Admin
+    }, 
+    {
+        user:'bendahara', role:'bendahara', app:'induk', password:'123', 
+        photo:'https://cdn-icons-png.flaticon.com/512/3135/3135823.png' // Foto Bendahara
+    },
+    // ... user lainnya silakan diisi linknya jika mau
+    {user:'sekretaris', role:'sekretaris', app:'induk', password:'123', photo:''}, 
+    {user:'anggota', role:'anggota', app:'induk', password:'123', photo:''}, 
+    {user:'manager', role:'manager', app:'unit', unitScope:'sps', password:'123', photo:''}, 
+    {user:'nasabah_demo', role:'nasabah', app:'induk', password:'123', photo:''}
+];
+        
+        const defaultConfig = { 
+            nama: "BMT BINA INSAN ASSIROT", izin: "518/BH/KWK/2025", alamat: "Jl. Jendral Sudirman No. 45", wa: "08123456789", email: "info@bmt.co.id", logo: "https://cdn-icons-png.flaticon.com/512/2317/2317968.png", 
+            wallpaper: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1080&auto=format&fit=crop", 
+            struktur: { ketua: "H. Abdullah", sekretaris: "Siti Aminah", bendahara: "Rudi Hartono" }, 
+            visi: "Menjadi Lembaga Keuangan Syariah Terdepan", misi: "1. Transaksi Syariah Murni\n2. Pelayanan Prima", 
+            unit_leads: {sps: "Bpk. Budi", kms: "Ibu Ani", gadai: "Bpk. Cipto"}, 
+            shu: { profit: 150000000, p_tetap: 50, p_nasabah: 20 }, 
+            codes: { sps: 'SPS', kms: 'KMS', gadai: 'GS', haji: 'HJ' }, 
+            margins: { sps: 10, kms: 20, gadai: 5, haji: 0 }, 
+            margins_weekly: { sps: 3, kms: 5, gadai: 2, haji: 0 }, 
+            limits: { sps: 100, kms: 100, gadai: 100, haji: 100 }, 
+            templates: { sps: "Pasal 1: Akad Mudharabah.\nPasal 2: Nisbah 60:40.", kms: "Pasal 1: Murabahah.\nPasal 2: Jual Beli.", gadai: "Pasal 1: Rahn.\nPasal 2: Biaya Titip.", haji: "Pasal 1: Wadiah Yad Dhamanah." },
+            pesanTagih: "Assalamu'alaikum {sapaan} {nama}, kami dari BMT mengingatkan tagihan sebesar {tagihan} jatuh tempo pada {tanggal}. Mohon segera dibayar.",
+            pesanBayar: "Terima kasih {sapaan} {nama}, pembayaran sebesar {tagihan} telah kami terima. (Kwitansi Digital)",
+            pesanIuran: "Assalamu'alaikum {sapaan} {nama}, kami mengingatkan bahwa Iuran Wajib Anggota bulan ini sebesar {tagihan} belum terbayar. Mohon segera dilunasi.",
+            simpananWajib: 50000
+        };
+
+        let defaultAccess = {
+            'KETUA': ['approval_pusat', 'approval', 'manajemen_anggota', 'iuran_ketua', 'laporan_eksekutif', 'kirim_instruksi', 'rapat_online', 'acc_profit_ketua'],
+            'SEKRETARIS': ['inbox_ketua', 'chat_tamu', 'id_card_maker', 'surat_induk', 'sarpras_approval', 'laporan_pusat', 'monitoring_pegawai', 'kelayakan_marketing'],
+            'BENDAHARA': ['inbox_ketua', 'kas_pusat', 'simpanan_wajib', 'distribusi_modal', 'distribusi_profit'],
+            'MANAGER': ['approval', 'laporan_tunggakan', 'laporan_detail', 'req_sarpras', 'setting_margin', 'monitoring_kinerja', 'terima_profit_manager', 'laporan_laba_unit'],
+            'MARKETING': ['input', 'input_tabungan', 'cetak', 'billing', 'dompet_marketing'],
+            'ACCOUNTING': ['arus_kas', 'dana_unit', 'verifikasi_bayar', 'distribusi_insentif']
+        };
+
+        const allMenus = [
+            {id: 'approval_pusat', name: 'Persetujuan Pusat (Ketua)'},
+            {id: 'manajemen_anggota', name: 'Manajemen Anggota'},
+            {id: 'iuran_ketua', name: 'Iuran & Tagihan'},
+            {id: 'laporan_eksekutif', name: 'Laporan Eksekutif'},
+            {id: 'kirim_instruksi', name: 'Instruksi Ketua'},
+            {id: 'rapat_online', name: 'Rapat Online'},
+            {id: 'acc_profit_ketua', name: 'ACC Profit Sharing'},
+            
+            {id: 'inbox_ketua', name: 'Kotak Masuk (Pesan)'},
+            {id: 'chat_tamu', name: 'Live Chat Tamu'},
+            {id: 'id_card_maker', name: 'Pembuat ID Card'},
+            {id: 'surat_induk', name: 'Surat Menyurat'},
+            {id: 'sarpras_approval', name: 'Approval Sarpras'},
+            {id: 'laporan_pusat', name: 'Pusat Laporan'},
+            {id: 'monitoring_pegawai', name: 'Monitoring Pegawai'},
+            {id: 'kelayakan_marketing', name: 'Kontrol Marketing'},
+            
+            {id: 'kas_pusat', name: 'Kas Induk BMT'},
+            {id: 'simpanan_wajib', name: 'Simpanan Wajib'},
+            {id: 'distribusi_modal', name: 'Distribusi Modal Unit'},
+            {id: 'distribusi_profit', name: 'Distribusi Profit (SHU)'},
+            
+            {id: 'approval', name: 'Approval Unit'},
+            {id: 'laporan_tunggakan', name: 'Monitoring Tunggakan'},
+            {id: 'laporan_detail', name: 'Arsip Nasabah'},
+            {id: 'req_sarpras', name: 'Request Sarpras'},
+            {id: 'setting_margin', name: 'Setting Margin'},
+            {id: 'monitoring_kinerja', name: 'Kinerja Marketing'},
+            {id: 'terima_profit_manager', name: 'Terima Profit Manager'},
+            
+            {id: 'input', name: 'Input Pembiayaan'},
+            {id: 'input_tabungan', name: 'Input Tabungan'},
+            {id: 'cetak', name: 'Cetak Dokumen'},
+            {id: 'billing', name: 'Tagihan & Bayar'},
+            {id: 'dompet_marketing', name: 'Dompet Marketing'},
+            
+            {id: 'arus_kas', name: 'Buku Kas Unit'},
+            {id: 'dana_unit', name: 'Manajemen Dana Unit'},
+            {id: 'distribusi_insentif', name: 'Distribusi Insentif'}, 
+            {id: 'laporan_laba_unit', name: 'Laporan Laba Rugi Unit'}, 
+            {id: 'verifikasi_bayar', name: 'Verifikasi Pembayaran'}
+        ];
+
+        let settings = defaultConfig;
+        let dbUsers = defaultUsers;
+        let dbNasabah = [], dbSarpras = [], dbSurat = [], dbDana = [], dbPresensi = [], dbArusKas = [], dbSimpananWajib = [], dbInstruksi = [], dbChat = [];
+        let dbProfitFlow = []; 
+        let dbTabungan = [];
+        let activeApp = '', activeUser = null;
+        let idCardTempPhoto = "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
+        let tempUserPhoto = '';
+        let tempKTPPhoto = '';
+        let tempFoto = '';
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            loadSession();
+            await loadFromCloud(); 
+            setInterval(() => { if(!activeUser) renderChat(); else { let cb=document.getElementById('sek-chat-body'); if(cb) renderChatSekretaris(); }}, 3000); 
+        });
+
+        function saveSession() {
+            if(activeUser && activeApp) {
+                let safeUser = { ...activeUser }; 
+                localStorage.setItem('bmt_session_user', JSON.stringify(safeUser));
+                localStorage.setItem('bmt_session_app', activeApp);
+            }
+        }
+
+        function loadSession() {
+            let u = localStorage.getItem('bmt_session_user');
+            let a = localStorage.getItem('bmt_session_app');
+            if(u && a) { activeUser = JSON.parse(u); activeApp = a; }
+        }
+
+        function clearSession() {
+            localStorage.removeItem('bmt_session_user');
+            localStorage.removeItem('bmt_session_app');
+            localStorage.removeItem('bmt_last_page');
+        }
+
+        async function loadFromCloud() {
+            try {
+                const snapshot = await db.ref('bmt_data').once('value');
+                const data = snapshot.val();
+                if (!data || !data.users) { initDefaultData(); saveToCloud(); } else {
+                    if (data.config) settings = data.config; else settings = defaultConfig;
+                    if(!settings.margins_weekly) settings.margins_weekly = defaultConfig.margins_weekly; 
+                    if(!settings.role_permissions) settings.role_permissions = defaultAccess;
+                    if(!settings.logo || settings.logo.length < 50) settings.logo = "https://cdn-icons-png.flaticon.com/512/2317/2317968.png";
+                    dbUsers = data.users || defaultUsers; dbNasabah = data.nasabah || []; dbSarpras = data.sarpras || []; dbSurat = data.surat || []; dbDana = data.dana || []; dbPresensi = data.presensi || []; dbArusKas = data.aruskas || []; dbSimpananWajib = data.simpananwajib || []; dbInstruksi = data.instruksi || []; dbChat = data.chat || []; dbProfitFlow = data.profitFlow || []; dbTabungan = data.tabungan || []; 
+                }
+                initApp(); 
+            } catch(e) { console.error("Firebase Error:", e); }
+        }
+
+        function initDefaultData() { if(dbDana.length === 0) dbDana = [ {id: 1, date: Date.now(), unit: 'sps', amount: 1000000000, status: 'Approved', desc: 'Modal Awal'} ]; }
+        
+        async function saveToCloud() {
+            const status = document.getElementById('sync-status'); 
+            status.classList.add('active'); status.innerHTML = '<i class="fas fa-sync fa-spin"></i> Menyimpan...'; 
+            let payload = { config: settings, users: dbUsers, nasabah: dbNasabah, sarpras: dbSarpras, surat: dbSurat, dana: dbDana, presensi: dbPresensi, aruskas: dbArusKas, simpananwajib: dbSimpananWajib, instruksi: dbInstruksi, chat: dbChat, profitFlow: dbProfitFlow, tabungan: dbTabungan };
+            try { await db.ref('bmt_data').set(payload); status.innerHTML = '<i class="fas fa-check"></i> Tersimpan'; setTimeout(() => status.classList.remove('active'), 2000); } catch(e) { status.innerHTML = 'Gagal Simpan!'; }
+        }
+
+        function initApp() { 
+            renderIdentitas(); 
+            if(activeUser) {
+                 document.getElementById('gateway').classList.add('hidden'); document.getElementById('gateway').style.display = 'none'; 
+                 const app = document.getElementById('app'); app.classList.remove('hidden'); app.style.display = 'flex';
+                 renderMenu(); renderIdentitas();
+                 let lastPage = localStorage.getItem('bmt_last_page'); if(lastPage) page(lastPage); else page('home');
+            } else {
+                 document.getElementById('gateway').classList.remove('hidden'); renderChat();
+            }
+        }
+
+        function renderIdentitas() {
+            let logoSrc = settings.logo || "https://cdn-icons-png.flaticon.com/512/2317/2317968.png";
+            document.getElementById('gw-nama').innerText = settings.nama; document.getElementById('sb-nama').innerText = settings.nama; 
+            document.getElementById('gw-logo').src = logoSrc; document.getElementById('sb-logo').src = logoSrc;
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        function resizeImage(file, callback, width=300) { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = function(event) { const img = new Image(); img.src = event.target.result; img.onload = function() { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const scaleFactor = width / img.width; canvas.width = width; canvas.height = img.height * scaleFactor; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); callback(canvas.toDataURL('image/jpeg', 0.8)); } } }
+        function updateLogo(input) { if(input.files[0]) { resizeImage(input.files[0], (res) => { settings.logo = res; document.getElementById('gw-logo').src = res; saveToCloud(); alert("Logo Diperbarui!"); renderIdentitas(); }, 300); } }
+        function updateWall(input) { if(input.files[0]) resizeImage(input.files[0], (res) => { settings.wallpaper = res; alert("Wallpaper Siap! Simpan."); }, 1000); }
+        function readFoto(input) { if(input.files[0]) resizeImage(input.files[0], (res) => { tempFoto = res; alert("Foto Siap!"); }, 300); }
+        function readUserPhoto(input) { if(input.files[0]) resizeImage(input.files[0], (res) => { tempUserPhoto = res; alert("Foto Pegawai Siap!"); }, 300); }
+        function readKTPPhoto(input) { 
+            if(input.files[0]) {
+                resizeImage(input.files[0], (res) => { tempKTPPhoto = res; }, 400); 
+                document.getElementById('ocr-loading').style.display = 'flex';
+                Tesseract.recognize(input.files[0],'ind').then(({ data: { text } }) => {
+                    document.getElementById('ocr-loading').style.display = 'none';
+                    let nikMatch = text.match(/\d{16}/); if(nikMatch) document.getElementById('i-nik').value = nikMatch[0];
+                    let lines = text.split('\n');
+                    for(let i=0; i<lines.length; i++) {
+                        if(lines[i].toLowerCase().includes('nama')) { let val = lines[i].split(':')[1] || lines[i].replace(/nama/i, ''); if(val) document.getElementById('i-nm').value = val.replace(/[^a-zA-Z\s]/g, '').trim(); }
+                        if(lines[i].toLowerCase().includes('alamat')) { let val = lines[i].split(':')[1] || lines[i].replace(/alamat/i, ''); if(val) document.getElementById('i-al').value = val.trim(); }
+                    }
+                    alert("OCR Selesai. Data terisi otomatis.");
+                }).catch(err => { document.getElementById('ocr-loading').style.display = 'none'; alert("Gagal baca otomatis. Input manual."); });
+            }
+        }
+        
+        function formatWA(num) { let n = num.replace(/\D/g, ''); if(n.startsWith('0')) n = '62' + n.slice(1); if(n.startsWith('8')) n = '62' + n; return n; }
+        function openResetMenu() { let p = prompt("Masukkan Password Administrator:"); if(p === "Ahmad FD") { document.getElementById('reset-modal').style.display = 'flex'; } else { alert("Password Salah!"); } }
+        
+        function logoutManual() { 
+            clearSession(); 
+            const app = document.getElementById('app'); const gateway = document.getElementById('gateway');
+            app.classList.add('hidden'); app.style.display = 'none'; 
+            gateway.classList.remove('hidden'); gateway.style.display = 'flex'; 
+            activeUser=null; document.getElementById('sidebar').classList.remove('active'); document.getElementById('username').value=''; document.getElementById('password').value=''; renderChat(); renderIdentitas(); 
+        }
+
+        function prosesLoginAdmin() {
+            const u = document.getElementById('admin-user').value; const p = document.getElementById('admin-pass').value;
+            if (u === 'haura app' && p === '12345') { activeUser = { user: 'haura app', role: 'ADMIN', photo: '', app: 'induk' }; activeApp = 'induk'; saveSession(); document.getElementById('modal-admin').style.display = 'none'; loginSuccess(); return; }
+            let user = dbUsers.find(x => x.user === u && x.password === p && (x.role.toUpperCase() === 'ADMIN' || x.role.toUpperCase() === 'KETUA'));
+            if(user) { activeUser = { user: user.user, role: user.role.toUpperCase(), photo: user.photo }; activeApp = 'induk'; saveSession(); document.getElementById('modal-admin').style.display = 'none'; loginSuccess(); } else { alert("Gagal Masuk!"); }
+        }
+
+        // --- REVISI LOGIN (FORCE UNIT) ---
+        function prosesLogin() {
+            const userIn = document.getElementById('username').value;
+            const passIn = document.getElementById('password').value;
+            const appSelect = document.getElementById('login-app-select').value;
+
+            if (userIn === 'haura app' && passIn === '12345') { activeUser = { user: 'haura app', role: 'ADMIN', app: 'induk', photo: '' }; activeApp = 'induk'; loginSuccess(); return; }
+
+            let user = dbUsers.find(u => u.user === userIn && u.password === passIn);
+
+            if (user) {
+                if(appSelect==='induk' && user.app!=='induk') return alert("Akses Ditolak! Anda bukan pengurus pusat.");
+                
+                // LOGIC FORCE UNIT
+                if(user.app === 'unit' && user.unitScope) {
+                     if(appSelect !== 'induk' && appSelect !== user.unitScope) {
+                         return alert(`Login Gagal. Akun Anda terdaftar khusus untuk unit: ${user.unitScope.toUpperCase()}`);
+                     }
+                     activeApp = user.unitScope;
+                } else {
+                     activeApp = appSelect;
+                }
+
+                activeUser = { user: user.user, role: user.role.toUpperCase(), photo: user.photo, isEligible: user.isEligible };
+                loginSuccess();
+            } else {
+                alert("Username/Password salah.");
+            }
+        }
+
+        function loginSuccess() { saveSession(); const status = document.getElementById('sync-status'); if(status) { status.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Memuat...'; status.classList.add('active'); } setTimeout(() => { location.reload(); }, 500); }
+
+        function checkAccess(role, menuId) {
+            // 1. Admin selalu punya akses penuh
+            if (role === 'ADMIN' || (activeUser && activeUser.user === 'haura app')) return true;
+
+            // 2. Ambil data izin dari Database (Settings), jika kosong pakai Default
+            let permissions = settings.role_permissions || defaultAccess;
+            
+            // 3. Cek apakah role tersebut punya izin untuk menuId ini
+            let r = role.toUpperCase();
+            if (permissions && permissions[r]) {
+                return permissions[r].includes(menuId);
+            }
+            
+            // 4. Jika tidak ada di daftar, tolak akses
+            return false;
+        }
+
+        function renderMenu() {
+            try {
+                document.getElementById('user-role-display').innerText = activeUser.role; document.getElementById('user-name-display').innerText = activeUser.user;
+                let fotoProfil = activeUser.photo || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+                // Update Foto Profil di Header
+                let imgEl = document.getElementById('header-profile-pic');
+                if(imgEl) {
+                    // Jika user punya foto, pakai. Jika tidak, pakai default.
+                    if(activeUser.photo && activeUser.photo !== "") {
+                        imgEl.src = activeUser.photo;
+                    } else {
+                        imgEl.src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+                    }
+                }
+                let m = document.getElementById('menu-container'); m.innerHTML = ''; 
+                let notifCount = dbInstruksi ? dbInstruksi.filter(x => x.toRole && x.toRole.toUpperCase() === activeUser.role && !x.read).length : 0;
+                let badge = notifCount > 0 ? `<span class="badge" style="background:red; color:white; padding:2px 6px; border-radius:50%; font-size:10px; margin-left:auto;">${notifCount}</span>` : '';
+                const add = (id, i, t, ex='') => { m.innerHTML += `<a class="menu-link" onclick="page('${id}'); if(window.innerWidth<=900) toggleSidebar();"><i class="${i}"></i> <span>${t}</span>${ex}</a>`; };
+                let r = activeUser.role;
+                if(r !== 'NASABAH') add('home', 'fas fa-home', 'Dashboard');
+                allMenus.forEach(menu => { if (checkAccess(r, menu.id)) { let extra = menu.id === 'inbox_ketua' ? badge : ''; add(menu.id, getMenuIcon(menu.id), menu.name, extra); } });
+                if (r === 'ADMIN' || activeUser.user === 'haura app') { if(!allMenus.find(x => x.id === 'users')) add('users', 'fas fa-users-cog', 'Kelola User'); if(!allMenus.find(x => x.id === 'manage_access')) add('manage_access', 'fas fa-shield-alt', 'Atur Hak Akses'); add('identitas', 'fas fa-cog', 'Identitas'); }
+                if (r === 'ANGGOTA') { add('ajukan_pinjaman', 'fas fa-hand-holding-usd', 'Ajukan Pinjaman'); add('rapat_online_anggota', 'fas fa-video', 'Rapat Online'); }
+                if (r === 'NASABAH') { add('dashboard_nasabah', 'fas fa-home', 'Dashboard Nasabah'); }
+            } catch (e) { console.error("Menu Render Error:", e); }
+        }
+        
+        function getMenuIcon(id) {
+            if(id.includes('approval')) return 'fas fa-gavel'; if(id.includes('manajemen')) return 'fas fa-user-tie'; if(id.includes('iuran')) return 'fas fa-wallet'; if(id.includes('laporan')) return 'fas fa-chart-pie'; if(id.includes('chat')) return 'fas fa-comments'; if(id.includes('surat')) return 'fas fa-envelope'; if(id.includes('kas')) return 'fas fa-book-open'; if(id.includes('input')) return 'fas fa-user-plus'; if(id.includes('setting')) return 'fas fa-cog'; if(id.includes('profit')) return 'fas fa-coins'; if(id.includes('tabungan')) return 'fas fa-piggy-bank'; return 'fas fa-circle'; 
+        }
+
+        function generatePDF(elementId, filename) {
+            const element = document.getElementById(elementId);
+            if (!element) return alert("Elemen tidak ditemukan!");
+            
+            // 1. SIMPAN STATUS ASLI
+            const originalDisplay = element.style.display;
+            const originalWidth = element.style.width;
+            
+            // 2. PAKSA TAMPIL & SET LEBAR FIX (Agar tabel tidak gepeng di HP)
+            element.style.display = 'block';
+            element.style.width = '800px'; // Paksa lebar seukuran kertas A4 desktop
+            element.style.maxWidth = 'none';
+            element.style.margin = '0 auto';
+            element.style.backgroundColor = 'white';
+
+            let wm = element.querySelector('.watermark');
+            if(wm) wm.style.display = 'none';
+
+            // 3. SETTINGAN KHUSUS "DESKTOP MODE"
+            const opt = {
+                margin: 10,
+                filename: filename + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    // INI PENTING: Memaksa render seolah-olah di layar komputer lebar
+                    windowWidth: 1200, 
+                    width: 800 
+                }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 4. EKSEKUSI DOWNLOAD
+            html2pdf().set(opt).from(element).save().then(() => { 
+                if(wm) wm.style.display = 'block';
+                
+                // 5. KEMBALIKAN TAMPILAN SEPERTI SEMULA
+                element.style.display = originalDisplay || 'none'; 
+                element.style.width = originalWidth; // Reset lebar
+            }).catch(err => {
+                console.error("Gagal Download:", err);
+                alert("Gagal download PDF. Cek console browser.");
+                // Tetap kembalikan tampilan jika error
+                element.style.display = originalDisplay || 'none';
+                element.style.width = originalWidth;
+            });
+        }
+
+        function openWA(phone, text) { const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); let url = isMobile ? `https://wa.me/${formatWA(phone)}?text=${encodeURIComponent(text)}` : `https://web.whatsapp.com/send?phone=${formatWA(phone)}&text=${encodeURIComponent(text)}`; window.open(url, '_blank'); }
+
+        // --- BUSINESS LOGIC FUNCTIONS ---
+        function setMarketingEligible(user, status) { let u = dbUsers.find(x => x.user === user); if(u) { u.isEligible = status; saveToCloud(); page('kelayakan_marketing'); } }
+        function createProfitDistribution() { 
+    let unit = document.getElementById('pd-unit').value; 
+    let persen = document.getElementById('pd-persen').value;
+    let amt = document.getElementById('pd-amt').value; 
+    
+    if(!unit || unit === "") return alert("Pilih Unit dulu!");
+    if(!persen || persen <= 0) return alert("Masukkan persentase (misal: 50)!");
+    if(!amt || parseInt(amt) <= 0) return alert("Nominal nol. Unit tidak memiliki laba tersedia.");
+
+    let maxLaba = getAvailableProfit(unit);
+    if(parseInt(amt) > maxLaba) return alert("Error: Nominal melebihi laba tersedia.");
+
+    dbProfitFlow.push({ 
+        id: Date.now(), 
+        date: Date.now(), 
+        amount: parseInt(amt), 
+        persen: parseInt(persen), 
+        targetUnit: unit, 
+        status: 'Pending Ketua',
+        inputBy: activeUser.user
+    }); 
+    
+    saveToCloud(); 
+    alert(`Pengajuan Berhasil!\nUnit: ${unit.toUpperCase()}\nPersen: ${persen}%\nNominal: Rp ${parseInt(amt).toLocaleString()}`); 
+    page('distribusi_profit'); 
+}
+        function approveProfitKetua(id) { 
+    let p = dbProfitFlow.find(x => x.id == id); 
+    
+    if(confirm(`Setujui bagi hasil Unit ${p.targetUnit.toUpperCase()} sebesar Rp ${parseInt(p.amount).toLocaleString()}?`)) {
+        p.status = 'Pending Manager'; 
+        
+        // Uang keluar dari KAS UNIT (bukan Induk)
+        dbArusKas.push({
+            date: Date.now(), 
+            unit: p.targetUnit, 
+            type: 'Keluar', 
+            amount: p.amount, 
+            desc: `Bagi Hasil Profit (${p.persen}%)`
+        });
+
+        saveToCloud(); 
+        page('acc_profit_ketua'); 
+        alert("Disetujui. Dana dipotong dari Kas Unit.");
+    }
+}
+        function acceptProfitManager(id) { let p = dbProfitFlow.find(x => x.id == id); p.status = 'Pending Accounting'; saveToCloud(); alert("Dana Diterima. Teruskan ke Accounting."); page('terima_profit_manager'); }
+        function distributeProfitAccounting(id) { 
+    let p = dbProfitFlow.find(x => x.id == id); 
+    let unitClients = dbNasabah.filter(n => n.unit === p.targetUnit && n.status === 'Approved'); 
+    
+    let marketingCounts = {}; 
+    unitClients.forEach(c => { 
+        if(!marketingCounts[c.inputBy]) marketingCounts[c.inputBy] = 0; 
+        marketingCounts[c.inputBy]++; 
+    }); 
+
+    let totalClients = unitClients.length; 
+    if(totalClients === 0) return alert("Belum ada nasabah lolos."); 
+    
+    let amountPerClient = parseInt(p.amount) / totalClients; 
+    
+    // Simpan data Insentif agar terbaca di Marketing
+    Object.keys(marketingCounts).forEach(mkt => { 
+        let share = Math.floor(amountPerClient * marketingCounts[mkt]); 
+        dbArusKas.push({
+            date: Date.now(), 
+            unit: p.targetUnit, 
+            type: 'Insentif',      // <--- Tipe PENTING
+            recipient: mkt,        // <--- Nama Penerima
+            amount: share, 
+            desc: `Bonus SHU (${marketingCounts[mkt]} Nasabah)`
+        }); 
+    }); 
+
+    p.status = 'Complete'; 
+    saveToCloud(); 
+    alert("Distribusi Selesai! Masuk ke dompet marketing."); 
+    page('distribusi_insentif'); 
+}
+        function updateRoleAccess() {
+            // 1. Siapkan wadah penyimpanan di memori
+            if (!settings.role_permissions) settings.role_permissions = JSON.parse(JSON.stringify(defaultAccess));
+
+            // 2. Loop semua kotak centang (checkbox) yang ada di layar
+            let checkboxes = document.querySelectorAll('.perm-check');
+            
+            checkboxes.forEach(cb => {
+                let role = cb.dataset.role; // Contoh: MANAGER
+                let mid = cb.dataset.mid;   // Contoh: laporan_laba_unit
+                
+                // Buat array kosong jika role ini belum punya data
+                if (!settings.role_permissions[role]) {
+                    settings.role_permissions[role] = [];
+                }
+
+                if (cb.checked) {
+                    // JIKA DICENTANG: Tambahkan ke daftar (kalau belum ada)
+                    if (!settings.role_permissions[role].includes(mid)) {
+                        settings.role_permissions[role].push(mid);
+                    }
+                } else {
+                    // JIKA TIDAK DICENTANG: Hapus dari daftar
+                    settings.role_permissions[role] = settings.role_permissions[role].filter(id => id !== mid);
+                }
+            });
+
+            // 3. Simpan permanen ke Cloud/Database
+            saveToCloud();
+            
+            // 4. Konfirmasi
+            alert("Pengaturan Hak Akses Tersimpan!\n\nUser target HARUS Logout dan Login ulang agar perubahan aktif.");
+        }
+        function saveAnggotaLoan() { let amt = document.getElementById('ang-amt').value; let ten = document.getElementById('ang-ten').value; let type = document.getElementById('ang-type').value; if(!amt || !ten) return alert("Lengkapi Data!"); dbNasabah.push({ id: Date.now(), unit: 'sps', nama: activeUser.user, plafond: amt, tenor: ten, tenorType: type, status: 'Pending', payStatus: 'Belum', inputBy: 'Self-Service', noSurat: '-', ktp: '', foto: '' }); saveToCloud(); alert("Pengajuan Terkirim ke Manager SPS"); page('home'); }
+        function saveTabungan() { 
+    let nama = document.getElementById('t-nm').value; 
+    let setoran = document.getElementById('t-setoran').value; 
+    let tenorType = document.getElementById('t-tenor-type').value; 
+    let tenor = document.getElementById('t-tenor').value; 
+    
+    // Ambil Admin dari Input (Default 5000)
+    let elAdm = document.getElementById('t-adm');
+    let biayaAdmin = elAdm ? (parseInt(elAdm.value) || 0) : 5000;
+
+    if(!nama || !setoran) return alert("Data belum lengkap"); 
+    
+    dbTabungan.push({ 
+        id: Date.now(), 
+        unit: activeApp, 
+        nama: nama, 
+        setoranAwal: setoran, 
+        tenorType: tenorType, 
+        tenor: tenor, 
+        saldo: setoran, 
+        inputBy: activeUser.user, 
+        date: Date.now() 
+    }); 
+    
+    // Uang Admin Masuk ke KAS UNIT
+    if(biayaAdmin > 0) {
+        dbArusKas.push({
+            date: Date.now(), 
+            unit: activeApp, 
+            type: 'Masuk', 
+            amount: biayaAdmin, 
+            desc: `Pendapatan Adm Buka Rek ${nama}`
+        }); 
+    }
+
+    saveToCloud(); 
+    alert("Rekening Berhasil Dibuat. Admin masuk ke Kas Unit."); 
+    page('input_tabungan'); 
+}
+
+        // --- PAGE CONTROLLER (ROUTER) ---
+        function page(id) {
+            localStorage.setItem('bmt_last_page', id);
+            let b=document.getElementById('content-body'); let t=document.getElementById('page-title'); b.innerHTML='';
+            
+            // --- REVISI MONITORING KINERJA (MANAGER) ---
+            if(id === 'monitoring_kinerja') {
+                t.innerText = "Monitoring Kinerja Marketing";
+                let mktStats = {};
+                dbNasabah.filter(n => n.unit === activeApp).forEach(n => {
+                    if(!mktStats[n.inputBy]) mktStats[n.inputBy] = {total:0, approved:0, nominal:0};
+                    mktStats[n.inputBy].total++;
+                    if(n.status === 'Approved') {
+                        mktStats[n.inputBy].approved++;
+                        mktStats[n.inputBy].nominal += parseInt(n.plafond);
+                    }
+                });
+                let rows = Object.keys(mktStats).map(m => `<tr><td>${m}</td><td>${mktStats[m].total}</td><td>${mktStats[m].approved}</td><td style="color:green;font-weight:bold;">Rp ${mktStats[m].nominal.toLocaleString()}</td></tr>`).join('');
+                b.innerHTML = `<div class="card"><h4>Performa Marketing Unit ${activeApp.toUpperCase()}</h4><div class="table-responsive"><table><thead><tr><th>Marketing</th><th>Total Ajuan</th><th>Lolos</th><th>Total Pencairan (Rp)</th></tr></thead><tbody>${rows || '<tr><td colspan="4">Belum ada data.</td></tr>'}</tbody></table></div></div>`;
+            }
+
+            // --- REVISI CETAK AKAD (MARKETING) ---
+            else if(id === 'cetak') {
+                t.innerText = "Cetak Dokumen Akad";
+                let rows = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved').map(x => `<tr><td data-label="Nama"><b>${x.nama}</b><br><small>${x.noSurat}</small></td><td data-label="Plafond">Rp ${parseInt(x.plafond).toLocaleString()}</td><td data-label="Tgl">${new Date(x.id).toLocaleDateString()}</td><td data-label="Aksi"><button class="btn btn-primary btn-sm" onclick="printAkad('${x.id}')"><i class="fas fa-print"></i> PDF</button></td></tr>`).join('');
+                b.innerHTML = `<div class="card"><h4>Siap Cetak (${activeApp.toUpperCase()})</h4><p>Hanya nasabah ACC Manager yang muncul.</p><div class="table-responsive"><table><thead><tr><th>Nama/No. Akad</th><th>Plafond</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>${rows || '<tr><td colspan="4">Belum ada data siap cetak.</td></tr>'}</tbody></table></div></div>`;
+            }
+
+            // --- REVISI BILLING & BAYAR (MARKETING) ---
+            // --- REVISI BILLING & BAYAR (FILTER KHUSUS MARKETING) ---
+            else if(id === 'billing') {
+                t.innerText = "Tagihan & Pembayaran";
+                
+                // 1. FILTER NASABAH (Hanya tampilkan nasabah milik Marketing tersebut)
+                let myClients = dbNasabah.filter(x => {
+                    let isUnit = x.unit === activeApp;
+                    let isAppr = x.status === 'Approved';
+                    // Jika login sebagai MARKETING, hanya lihat data inputannya sendiri
+                    // Jika MANAGER, lihat semua data unit
+                    let isMine = (activeUser.role === 'MARKETING') ? (x.inputBy === activeUser.user) : true;
+                    return isUnit && isAppr && isMine;
+                });
+
+                // 2. BUAT BARIS TABEL
+                let rows = myClients.map(x => {
+                    let p = parseInt(x.plafond); 
+                    let tenor = parseInt(x.tenor); 
+                    
+                    // Ambil margin (cegah error jika settings belum siap)
+                    let marginPersen = (settings.margins && settings.margins[activeApp]) ? settings.margins[activeApp] : 0;
+                    
+                    let totalMargin = p * (marginPersen / 100); 
+                    let totalHutang = p + totalMargin; 
+                    let angsuran = totalHutang / tenor;
+                    
+                    // Pastikan fungsi getStatusPeriode sudah ada (jika belum, dianggap status biasa)
+                    let statusBadge = (typeof getStatusPeriode === 'function') ? getStatusPeriode(x) : '<span class="badge">Cek Status</span>';
+                    
+                    return `<tr>
+                        <td data-label="Nama"><b>${x.nama}</b><br><small>${x.wa}</small></td>
+                        <td data-label="Status">${statusBadge}</td>
+                        <td data-label="Angsuran">Rp ${parseInt(angsuran).toLocaleString()}</td>
+                        <td data-label="Aksi">
+                            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                                <button class="btn btn-warning btn-sm" onclick="kirimWA('${x.id}', ${parseInt(angsuran)})">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button> 
+                                <button class="btn btn-success btn-sm" onclick="bayar('${x.id}', ${parseInt(angsuran)})">Bayar</button>
+                                <button class="btn btn-primary btn-sm" style="background:#6f42c1; border:none;" onclick="prosesPelunasan('${x.id}', ${totalHutang})">Lunas</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                // 3. TAMPILKAN KE LAYAR (Ini bagian yang mungkin hilang tadi)
+                b.innerHTML = `<div class="card">
+                    <h4>Daftar Tagihan (Nasabah Saya)</h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Nasabah</th><th>Status</th><th>Angsuran</th><th>Aksi</th></tr></thead>
+                            <tbody>${rows || '<tr><td colspan="4" style="text-align:center">Tidak ada data tagihan.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }
+            else if (id === 'manage_access') {
+                t.innerText = "Atur Hak Akses Menu";
+                
+                // Daftar Role yang mau diatur
+                let roles = ['KETUA', 'SEKRETARIS', 'BENDAHARA', 'MANAGER', 'MARKETING', 'ACCOUNTING'];
+                
+                // Header Tabel
+                let th = roles.map(r => `<th>${r}</th>`).join('');
+                
+                // Baris Tabel (Loop semua menu)
+                let trs = allMenus.map(m => {
+                    let tds = roles.map(r => {
+                        // Cek apakah Role ini punya akses ke Menu ini?
+                        // Kita pakai fungsi checkAccess yang sudah diperbaiki
+                        let isAllowed = checkAccess(r, m.id);
+                        let checked = isAllowed ? 'checked' : '';
+                        
+                        return `<td><input type="checkbox" class="perm-check" data-role="${r}" data-mid="${m.id}" ${checked}></td>`;
+                    }).join('');
+                    
+                    return `<tr><td>${m.name}</td>${tds}</tr>`;
+                }).join('');
+
+                b.innerHTML = `
+                <div class="card">
+                    <div style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px; font-size:0.9rem;">
+                        <i class="fas fa-info-circle"></i> <b>Petunjuk:</b> Centang untuk memberi akses. Hilangkan centang untuk memblokir akses. Jangan lupa klik tombol Simpan.
+                    </div>
+                    <button class="btn btn-success" onclick="updateRoleAccess()" style="margin-bottom:15px; width:100%; font-weight:bold;">
+                        <i class="fas fa-save"></i> SIMPAN PERUBAHAN
+                    </button>
+                    <div class="table-responsive">
+                        <table style="font-size:0.8rem; text-align:center;">
+                            <thead><tr><th style="text-align:left;">Menu / Fitur</th>${th}</tr></thead>
+                            <tbody>${trs}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }
+            else if(id === 'dashboard_nasabah') { 
+    t.innerText = `Dashboard Nasabah`; 
+    // Mencari data nasabah berdasarkan username yang sedang login
+    let myData = dbNasabah.filter(n => n.nama.replace(/\s/g, '').toLowerCase() === activeUser.user.toLowerCase() && n.status === 'Approved');
+    
+    let contentHtml = '';
+    
+    if(myData.length === 0) {
+        contentHtml = '<div class="card">Anda belum memiliki pembiayaan aktif.</div>';
+    } else {
+        myData.forEach(d => {
+            // Hitung kalkulasi hutang
+            let marginPersen = settings.margins[d.unit] || 0;
+            let totalHutangAwal = parseInt(d.plafond) + (parseInt(d.plafond) * marginPersen / 100);
+            let angsuranPerTenor = totalHutangAwal / parseInt(d.tenor);
+            
+            // Logika Sisa Hutang (Hutang awal dikurangi riwayat bayar yang sudah masuk kas)
+            let riwayatBayar = dbArusKas.filter(k => k.desc.includes(d.nama) && k.type === 'Masuk');
+            let totalSudahBayar = riwayatBayar.reduce((a, b) => a + parseInt(b.amount), 0);
+            let sisaHutang = totalHutangAwal - totalSudahBayar;
+            let sisaTenor = Math.ceil(sisaHutang / angsuranPerTenor);
+
+            contentHtml += `
+            <div class="card" style="background: var(--primary-gradient); color: white; margin-bottom: 15px;">
+                <small>Total Sisa Hutang (${d.unit.toUpperCase()})</small>
+                <h1 style="margin: 10px 0;">Rp ${sisaHutang.toLocaleString()}</h1>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.9;">
+                    <span>Angsuran: Rp ${Math.round(angsuranPerTenor).toLocaleString()}</span>
+                    <span>Sisa Tenor: ${sisaTenor} ${d.tenorType}</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Opsi Pembayaran</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="bukaFormBayar('${d.id}', ${Math.round(angsuranPerTenor)}, 'Angsuran')">
+                        <i class="fas fa-money-bill"></i> Bayar Angsuran
+                    </button>
+                    <button class="btn btn-success" onclick="bukaFormBayar('${d.id}', ${sisaHutang}, 'Pelunasan')">
+                        <i class="fas fa-check-double"></i> Pelunasan Total
+                    </button>
+                </div>
+            </div>
+
+            <div id="form-bayar-nasabah" class="card hidden" style="border: 2px dashed var(--secondary);">
+                <h4 id="judul-bayar">Upload Bukti</h4>
+                <div class="form-vertical">
+                    <label>Nominal Pembayaran</label>
+                    <input type="number" id="nom-bayar-nasabah" class="form-control" readonly>
+                    <label>Pilih Foto Kuitansi/Bukti Transfer</label>
+                    <input type="file" id="file-bukti-nasabah" class="form-control" accept="image/*" onchange="previewBukti(this)">
+                    <div id="preview-container" style="margin-bottom: 15px; text-align: center;"></div>
+                    <button class="btn btn-warning" style="width:100%" onclick="kirimBuktiKeAccounting()">
+                        <i class="fas fa-paper-plane"></i> Kirim Bukti Sekarang
+                    </button>
+                </div>
+            </div>`;
+        });
+    }
+    b.innerHTML = contentHtml;
+}
+            else if(id === 'ajukan_pinjaman') { t.innerText = "Ajukan Pinjaman Anggota"; b.innerHTML = `<div class="card"><h4>Formulir Pengajuan</h4><div class="form-vertical"><input id="ang-amt" type="number" class="form-control" placeholder="Nominal (Rp)"><div style="display:flex; gap:10px;"><input id="ang-ten" type="number" class="form-control" placeholder="Tenor"><select id="ang-type" class="form-control"><option value="Bulan">Bulan</option><option value="Minggu">Minggu</option></select></div><textarea class="form-control" placeholder="Keperluan"></textarea><button class="btn btn-primary" onclick="saveAnggotaLoan()">Kirim Pengajuan</button></div></div>`; }
+            else if(id === 'rapat_online_anggota') { t.innerText = "Rapat Online"; b.innerHTML = `<div class="card"><h4>Bergabung Rapat</h4><p>Klik tombol di bawah jika diundang.</p><button class="btn btn-primary" onclick="openMeeting()"><i class="fas fa-video"></i> Masuk Ruang Rapat</button><div id="jitsi-container" style="height:500px; margin-top:20px;"></div></div>`; }
+            else if(id === 'kelayakan_marketing') { t.innerText = "Kelayakan Marketing (Sekretaris)"; let mkt = dbUsers.filter(u => u.role === 'marketing'); let rows = mkt.map(u => { let status = u.isEligible === false ? '<span style="color:red">Dibekukan</span>' : '<span style="color:green">Layak</span>'; let btn = u.isEligible === false ? `<button class="btn btn-success btn-sm" onclick="setMarketingEligible('${u.user}', true)">Buka Akses</button>` : `<button class="btn btn-danger btn-sm" onclick="setMarketingEligible('${u.user}', false)">Kunci Akses</button>`; return `<tr><td>${u.user}</td><td>${status}</td><td>${btn}</td></tr>`; }).join(''); b.innerHTML = `<div class="card"><div class="table-responsive"><table><thead><tr><th>Marketing</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id === 'distribusi_profit') { 
+    t.innerText = "Distribusi Profit Unit (Bendahara)"; 
+    
+    let rows = dbProfitFlow.map(p => `
+        <tr>
+            <td>${new Date(p.date).toLocaleDateString()}</td>
+            <td>${p.targetUnit.toUpperCase()}</td>
+            <td>${p.persen ? p.persen + '%' : '-'}</td>
+            <td style="font-weight:bold;">Rp ${parseInt(p.amount).toLocaleString()}</td>
+            <td><span class="badge" style="background:#eee">${p.status}</span></td>
+        </tr>
+    `).join(''); 
+    
+    b.innerHTML = `
+    <div class="card" style="background:var(--primary-gradient); color:white;">
+        <small>Laba Tersedia (Unit Terpilih)</small>
+        <h1 id="info-laba-tersedia" style="margin-top:5px;">Pilih Unit</h1>
+    </div>
+
+    <div class="card">
+        <h4>Input Pembagian Profit</h4>
+        <div class="form-vertical">
+            <label>1. Pilih Unit Sumber Profit</label>
+            <select id="pd-unit" class="form-control" onchange="updateHitunganProfit()">
+                <option value="" disabled selected>-- Pilih Unit --</option>
+                <option value="sps">Unit SPS (Simpan Pinjam)</option>
+                <option value="kms">Unit KMS (Kredit Motor)</option>
+                <option value="gadai">Unit Gadai</option>
+            </select>
+            
+            <label>2. Persentase yang Dibagikan (%)</label>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input id="pd-persen" type="number" class="form-control" placeholder="0" style="flex:1;" onkeyup="updateHitunganProfit()">
+                <span style="font-weight:bold;">%</span>
+            </div>
+            
+            <label>3. Nominal Dicairkan (Otomatis)</label>
+            <input id="pd-amt" type="number" class="form-control" readonly style="background:#eee; font-weight:bold; color:var(--primary);">
+            
+            <button class="btn btn-primary" onclick="createProfitDistribution()" style="margin-top:20px; width:100%;">
+                <i class="fas fa-paper-plane"></i> Ajukan Distribusi
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h4>Riwayat Distribusi</h4>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr><th>Tgl</th><th>Unit</th><th>Persen</th><th>Nominal</th><th>Status</th></tr>
+                </thead>
+                <tbody>${rows || '<tr><td colspan="5">Belum ada data.</td></tr>'}</tbody>
+            </table>
+        </div>
+    </div>`; 
+}
+            else if(id === 'acc_profit_ketua') { t.innerText = "ACC Distribusi Profit (Ketua)"; let rows = dbProfitFlow.filter(p => p.status === 'Pending Ketua').map(p => `<tr><td>${p.targetUnit}</td><td>Rp ${parseInt(p.amount).toLocaleString()}</td><td><button class="btn btn-success btn-sm" onclick="approveProfitKetua(${p.id})">ACC</button></td></tr>`).join(''); b.innerHTML = `<div class="card"><h4>Menunggu Persetujuan</h4><div class="table-responsive"><table><thead><tr><th>Unit</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>${rows || '<tr><td colspan="3">Tidak ada data</td></tr>'}</tbody></table></div></div>`; }
+            else if(id === 'terima_profit_manager') { t.innerText = "Terima Dana SHU (Manager)"; let rows = dbProfitFlow.filter(p => p.status === 'Pending Manager' && p.targetUnit === activeApp).map(p => `<tr><td>Rp ${parseInt(p.amount).toLocaleString()}</td><td><button class="btn btn-primary btn-sm" onclick="acceptProfitManager(${p.id})">Terima Dana</button></td></tr>`).join(''); b.innerHTML = `<div class="card"><h4>Dana Masuk dari Pusat</h4><div class="table-responsive"><table><thead><tr><th>Nominal</th><th>Aksi</th></tr></thead><tbody>${rows || '<tr><td colspan="2">Kosong</td></tr>'}</tbody></table></div></div>`; }
+            else if(id === 'distribusi_insentif') { 
+                t.innerText = "Laporan Distribusi Insentif Marketing"; 
+                
+                // 1. Ambil data Insentif dari Arus Kas (Type: 'Insentif')
+                // Filter hanya data yang tipenya 'Insentif'
+                let insentifData = dbArusKas.filter(x => x.type === 'Insentif');
+                
+                // 2. Buat Tampilan Tabel
+                let rows = insentifData.map(x => `
+                    <tr>
+                        <td>${new Date(x.date).toLocaleDateString()}</td>
+                        <td><b>${x.recipient}</b></td> <td>${x.unit.toUpperCase()}</td>
+                        <td>${x.desc}</td>
+                        <td style="color:green; font-weight:bold;">Rp ${parseInt(x.amount).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            
+                b.innerHTML = `
+                <div class="card" style="background:var(--primary-gradient); color:white;">
+                    <small>Total Insentif Tersalurkan</small>
+                    <h1 style="margin-top:5px;">Rp ${insentifData.reduce((a,b)=>a+parseInt(b.amount),0).toLocaleString()}</h1>
+                </div>
+
+                <div class="card">
+                    <h4>Riwayat Pembagian Bonus/Insentif</h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Tanggal</th><th>Marketing</th><th>Unit</th><th>Keterangan</th><th>Nominal</th></tr>
+                            </thead>
+                            <tbody>${rows || '<tr><td colspan="5" style="text-align:center">Belum ada data insentif dibagikan.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>`; 
+            }
+            else if(id === 'verifikasi_bayar') {
+                t.innerText = "Verifikasi Pembayaran Nasabah";
+                
+                // 1. Ambil data instruksi/pesan khusus Accounting yang berisi 'KONFIRMASI BAYAR'
+                let listVerif = dbInstruksi.filter(i => i.toRole === 'ACCOUNTING' && i.message.includes('KONFIRMASI BAYAR'));
+                
+                // 2. Render tampilan kartu untuk setiap pengajuan
+                let rows = listVerif.map(v => `
+                    <div class="card" style="display: flex; gap: 15px; align-items: center; border-left: 5px solid var(--secondary); margin-bottom: 10px;">
+                        <img src="${v.buktiFoto}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px; cursor: pointer; border:1px solid #ddd;" onclick="window.open(this.src)">
+                        
+                        <div style="flex: 1;">
+                            <b style="color:var(--primary)">${v.sender.toUpperCase()}</b><br>
+                            <small>${v.message}</small><br>
+                            <small style="color:#888;">${new Date(v.id).toLocaleString()}</small>
+                        </div>
+                        
+                        <button class="btn btn-success btn-sm" onclick="terimaBayarNasabah('${v.id}')">
+                            <i class="fas fa-check"></i> TERIMA
+                        </button>
+                    </div>
+                `).join('');
+                
+                // 3. Masukkan ke layar (HTML)
+                b.innerHTML = `
+                    <div class="card" style="background:#e3f2fd; margin-bottom:15px;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <i class="fas fa-info-circle" style="font-size:1.5rem; color:var(--primary);"></i>
+                            <div>
+                                <b>Tugas Accounting:</b><br>
+                                Cek mutasi bank. Jika uang masuk, klik <b>TERIMA</b>. Sistem akan otomatis memotong hutang nasabah & mengirim WA Lunas.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="list-verifikasi-container">
+                        ${rows || '<div class="card" style="text-align:center; padding:30px; color:#999;"><i class="fas fa-check-circle" style="font-size:2rem; margin-bottom:10px;"></i><br>Tidak ada pengajuan pembayaran baru.</div>'}
+                    </div>
+                `;
+            }
+            else if(id === 'kas_pusat') { t.innerText = "Kas Induk BMT (Pusat)"; let totalIuran = dbSimpananWajib.reduce((a,b)=>a+parseInt(b.amount), 0); let totalProfitUnit = parseInt(settings.shu.profit || 0); let pengeluaran = dbArusKas.filter(x => x.unit === 'induk' && x.type === 'Keluar'); let totalKeluar = pengeluaran.reduce((a,b)=>a+parseInt(b.amount), 0); let saldoAkhir = (totalIuran + totalProfitUnit) - totalKeluar; let rowsKeluar = pengeluaran.map(x => `<tr><td data-label="Tgl">${new Date(x.date).toLocaleDateString()}</td><td data-label="Ket">${x.desc}</td><td data-label="Jml" style="color:red">Rp ${parseInt(x.amount).toLocaleString()}</td></tr>`).join(''); b.innerHTML = `<div class="card" style="background:#e3f2fd;"><h4><i class="fas fa-plus-circle"></i> Tambah Modal BMT</h4><div class="form-vertical" style="display:flex; gap:10px;"><input id="modal-in-amt" type="number" class="form-control" placeholder="Nominal Modal"><button class="btn btn-success" onclick="let a = document.getElementById('modal-in-amt').value;if(a){ dbArusKas.push({date:Date.now(), unit:'induk', type:'Masuk', amount:a, desc:'Suntikan Modal'}); saveToCloud(); page('kas_pusat'); }">Setor</button></div></div><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:15px; margin-bottom:20px;"><div class="card" style="background:var(--secondary-gradient); color:#0f3d3e;"><h3>Saldo Kas BMT</h3><h2>Rp ${saldoAkhir.toLocaleString()}</h2></div><div class="card"><h3>Total Iuran</h3><h3 style="color:var(--primary)">+ Rp ${totalIuran.toLocaleString()}</h3></div><div class="card"><h3>Profit Unit</h3><h3 style="color:var(--primary)">+ Rp ${totalProfitUnit.toLocaleString()}</h3></div><div class="card"><h3>Pengeluaran</h3><h3 style="color:#c0392b">- Rp ${totalKeluar.toLocaleString()}</h3></div></div><div class="card"><h4>Catat Pengeluaran Pusat</h4><div class="form-vertical" style="display:flex; gap:10px; flex-wrap:wrap;"><input id="k-induk-amt" type="number" class="form-control" placeholder="Nominal (Rp)" style="flex:1;"><input id="k-induk-desc" class="form-control" placeholder="Keterangan Pengeluaran" style="flex:2;"><button class="btn btn-danger" onclick="saveKasInduk()">Simpan</button></div></div><div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h4>Riwayat Pengeluaran</h4><button class="btn btn-primary" onclick="generatePDF('printable-area', 'Laporan_Kas_Pusat'); printLaporanKas('induk');"><i class="fas fa-print"></i> PDF</button></div><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>${rowsKeluar}</tbody></table></div></div>`; }
+            else if(id === 'approval_pusat') { t.innerText = "Persetujuan Pusat (Ketua)"; let danaPending = dbDana.filter(d => d.status === 'Pending').map(d => `<tr><td data-label="Tgl">${new Date(d.date).toLocaleDateString()}</td><td data-label="Tipe">DANA UNIT</td><td data-label="Ket">${d.desc} (${d.unit.toUpperCase()})</td><td data-label="Jml">Rp ${parseInt(d.amount).toLocaleString()}</td><td data-label="Aksi"><button class="btn btn-sm btn-success" onclick="accDana('${d.id}')">SETUJUI</button></td></tr>`).join(''); let sarprasPending = dbSarpras.map((s,i) => s.status==='Pending' ? `<tr><td data-label="Tgl">-</td><td data-label="Tipe">SARPRAS</td><td data-label="Ket">${s.item} - ${s.alasan}</td><td data-label="Jml">-</td><td data-label="Aksi"><button class="btn btn-sm btn-success" onclick="accSarpras(${i})">SETUJUI</button></td></tr>` : '').join(''); let content = danaPending + sarprasPending; if(content === '') content = '<tr><td colspan="5" style="text-align:center;">Tidak ada permintaan tertunda.</td></tr>'; b.innerHTML = `<div class="card"><h4>Permintaan Menunggu Persetujuan Ketua</h4><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>${content}</tbody></table></div></div>`; }
+            else if(id === 'manajemen_anggota') { t.innerText = "Manajemen Anggota Tetap"; let rows = dbUsers.filter(u => u.role !== 'admin').map((u,i) => `<tr><td data-label="Foto"><img src="${u.photo||'https://cdn-icons-png.flaticon.com/512/1077/1077114.png'}" class="user-thumb" style="width:40px;height:40px;border-radius:50%;"></td><td data-label="User">${u.user}</td><td data-label="Role">${u.role}</td><td data-label="Aksi"><span class="badge" style="background:#e8f5e9; color:#2e7d32; padding:5px 10px; border-radius:15px;">Aktif</span></td></tr>`).join(''); b.innerHTML = `<div class="card"><h4>Daftar Anggota Tetap & Staff</h4><div class="table-responsive"><table><thead><tr><th>Foto</th><th>Nama</th><th>Jabatan</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id === 'iuran_ketua') { t.innerText = "Monitoring Iuran Wajib"; let users = dbUsers.filter(u => u.role !== 'admin' && u.role !== 'ketua'); let rows = users.map(u => { let paid = dbSimpananWajib.filter(s => s.user === u.user && new Date(s.date).getMonth() === new Date().getMonth()).length > 0; let status = paid ? '<span class="badge" style="background:#d4edda; color:#155724; padding:5px 10px; border-radius:20px;">Lunas</span>' : '<span class="badge" style="background:#f8d7da; color:#721c24; padding:5px 10px; border-radius:20px;">Belum</span>'; let aksi = paid ? '-' : `<button class="btn btn-warning btn-sm" onclick="tagihIuranWA('${u.user}')"><i class="fab fa-whatsapp"></i> Tagih</button> <button class="btn btn-primary btn-sm" onclick="bayarIuranKetua('${u.user}')">Terima</button>`; return `<tr><td data-label="Nama">${u.user}</td><td data-label="Role">${u.role}</td><td data-label="Status">${status}</td><td data-label="Aksi">${aksi}</td></tr>`; }).join(''); b.innerHTML = `<div class="card"><h4>Status Iuran Bulan Ini</h4><div class="table-responsive"><table><thead><tr><th>Nama</th><th>Jabatan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id === 'laporan_eksekutif') { t.innerText = "Laporan Eksekutif"; let kas = dbArusKas.filter(x => x.unit === 'induk'); let saldo = dbSimpananWajib.reduce((a,b)=>a+parseInt(b.amount),0) + parseInt(settings.shu.profit) - kas.reduce((a,b)=>a+parseInt(b.amount),0); let suratK = dbSurat.filter(s=>s.jenis==='Keluar').length; let sarprasP = dbSarpras.filter(s=>s.status==='Pending').length; b.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:20px;"><div class="card" style="background:var(--primary-gradient); color:white"><h3>Saldo Kas Pusat</h3><h2>Rp ${saldo.toLocaleString()}</h2><small>Bendahara</small></div><div class="card" style="background:var(--secondary-gradient); color:#0f3d3e"><h3>Logistik & Surat</h3><h3>${suratK} Surat / ${sarprasP} Req</h3><small>Sekretaris</small></div></div><div class="card"><h4>Riwayat Transaksi Pusat</h4><div class="table-responsive"><table><thead><tr><th>Tgl</th><th>Ket</th><th>Nominal</th></tr></thead><tbody>${kas.map(x=>`<tr><td>${new Date(x.date).toLocaleDateString()}</td><td>${x.desc}</td><td>Rp ${parseInt(x.amount).toLocaleString()}</td></tr>`).join('')}</tbody></table></div></div>`; }
+            else if(id === 'kirim_instruksi') { t.innerText = "Kirim Instruksi Internal"; b.innerHTML = `<div class="card" style="max-width:500px"><h4>Form Instruksi Ketua</h4><p>Pesan akan masuk ke notifikasi akun penerima.</p><div class="form-vertical"><label>Tujuan</label><select id="ins-tuj" class="form-control"><option value="SEKRETARIS">Sekretaris</option><option value="BENDAHARA">Bendahara</option></select><label>Isi Instruksi</label><textarea id="ins-pesan" class="form-control" style="height:100px" placeholder="Tulis instruksi..."></textarea><button class="btn btn-primary" onclick="kirimInstruksiInternal()"><i class="fas fa-paper-plane"></i> Kirim ke Aplikasi</button></div></div>`; }
+            else if(id === 'rapat_online') { t.innerText = "Ruang Rapat Online"; b.innerHTML = `<div class="card" style="height:80vh;"><div id="jitsi-container" style="width:100%; height:100%;"></div></div>`; openMeeting(); }
+            else if(id === 'inbox_ketua') { t.innerText = "Pesan & Instruksi Ketua"; dbInstruksi.forEach(x => { if(x.toRole.toUpperCase() === activeUser.role) x.read = true; }); saveToCloud(); renderMenu(); let msgs = dbInstruksi.filter(x => x.toRole.toUpperCase() === activeUser.role).sort((a,b) => b.date - a.date); let rows = msgs.map(m => `<tr><td data-label="Tanggal">${new Date(m.date).toLocaleString()}</td><td data-label="Pesan" style="white-space:pre-wrap;">${m.message}</td></tr>`).join(''); if(rows === '') rows = '<tr><td colspan="2" style="text-align:center">Belum ada instruksi.</td></tr>'; b.innerHTML = `<div class="card"><h4>Kotak Masuk</h4><div class="table-responsive"><table><thead><tr><th>Waktu</th><th>Isi Instruksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id === 'chat_tamu') { t.innerText = "Live Chat Tamu"; b.innerHTML = `<div class="card" style="height:70vh; display:flex; flex-direction:column;"><div id="sek-chat-body" style="flex:1; overflow-y:auto; background:#f9f9f9; padding:15px; border:1px solid #ddd; border-radius:8px; margin-bottom:15px;"></div><div style="display:flex; gap:10px;"><input id="sek-chat-input" class="form-control" placeholder="Balas pesan tamu..." style="margin:0;"><button class="btn btn-primary" onclick="sendChat('Sekretaris')">Kirim</button></div></div>`; renderChatSekretaris(); }
+            else if(id === 'laporan_laba_unit') {
+                t.innerText = "Laporan Laba Unit (" + activeApp.toUpperCase() + ")";
+                let marginPersen = settings.margins[activeApp] || 0;
+                let dataNasabah = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved');
+                let totalPlafond = 0, totalPotensiLaba = 0, totalLabaCair = 0;
+
+                let rows = dataNasabah.map((n, i) => {
+                    let plaf = parseInt(n.plafond);
+                    let profit = plaf * (marginPersen / 100);
+                    totalPlafond += plaf;
+                    totalPotensiLaba += profit;
+                    let statusLaba = n.payStatus === 'Lunas' ? 
+                        (totalLabaCair += profit, '<span class="badge" style="background:#d4edda; color:green">Lunas</span>') : 
+                        '<span class="badge" style="background:#fff3cd; color:#856404">Berjalan</span>';
+
+                    return `<tr><td>${i+1}</td><td><b>${n.nama}</b></td><td>Rp ${plaf.toLocaleString()}</td><td style="color:green">Rp ${profit.toLocaleString()}</td><td>${statusLaba}</td></tr>`;
+                }).join('');
+
+                b.innerHTML = `<div class="card"><h3>Laba Rugi Unit (Margin: ${marginPersen}%)</h3><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:15px"><div class="card" style="background:var(--primary);color:white"><small>Total Plafond</small><h3>${totalPlafond.toLocaleString()}</h3></div><div class="card" style="border:1px solid orange"><small>Potensi Laba</small><h3 style="color:orange">${totalPotensiLaba.toLocaleString()}</h3></div><div class="card" style="background:#e8f5e9"><small>Laba Terealisasi</small><h3 style="color:green">${totalLabaCair.toLocaleString()}</h3></div></div><div class="table-responsive"><table><thead><tr><th>No</th><th>Nama</th><th>Plafond</th><th>Laba</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+            }    
+            else if(id==='approval') { t.innerText="Approval Pengajuan"; let rows = dbNasabah.filter(x => x.status === 'Pending').map(x => { let isUnitMatch = (x.unit === activeApp) || (activeApp === 'induk'); let bgStyle = isUnitMatch ? '' : 'background:#fff5f5;'; let unitLabel = isUnitMatch ? `<b>${x.unit.toUpperCase()}</b>` : `<b style="color:red">${x.unit.toUpperCase()} (Beda Unit)</b>`; let actionBtn = `<button class="btn btn-success btn-sm" onclick="approve('${x.id}', ${x.plafond})">ACC</button> <button class="btn btn-danger btn-sm" onclick="reject('${x.id}')">Tolak</button>`; return `<tr style="${bgStyle}"><td data-label="Unit">${unitLabel}</td><td data-label="Nama">${x.nama}</td><td data-label="Plafond">Rp ${parseInt(x.plafond).toLocaleString()}</td><td data-label="Marketing">${x.inputBy || '-'}</td><td data-label="Aksi" style="display:flex; gap:5px; justify-content:flex-end;">${actionBtn}</td></tr>`; }).join(''); b.innerHTML=`<div class="card"><div style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:10px; font-size:0.85rem;"><i class="fas fa-info-circle"></i> Manager login di: <b>${activeApp.toUpperCase()}</b>. Baris merah milik unit lain.</div><h4>Daftar Pending</h4><div class="table-responsive"><table><thead><tr><th>Unit</th><th>Nama</th><th>Plafond</th><th>Marketing</th><th>Aksi</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center; padding:20px;">Belum ada data masuk.</td></tr>'}</tbody></table></div></div>`; }
+            else if(id === 'laporan_tunggakan') { 
+                t.innerText = "Monitoring Pembayaran"; 
+                
+                // Manager melihat semua nasabah yang belum Lunas Total
+                let rows = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved' && x.payStatus !== 'Lunas').map(x => {
+                    
+                    // --- PANGGIL FUNGSI LOGIKA BARU DI SINI ---
+                    let statusBadge = getStatusPeriode(x);
+
+                    // Warnai baris tabel jadi merah muda jika statusnya "Terlambat" atau "BELUM LUNAS"
+                    let isLate = statusBadge.includes("Terlambat") || statusBadge.includes("BELUM LUNAS");
+                    let rowClass = isLate ? 'row-danger' : ''; 
+                    
+                    return `<tr class="${rowClass}">
+                        <td data-label="Nama"><b>${x.nama}</b></td>
+                        <td data-label="Marketing">${x.inputBy || '-'}</td>
+                        <td data-label="Status">${statusBadge}</td>
+                        <td data-label="Aksi">
+                            <button class="btn btn-danger btn-sm" onclick="waMarketing('${x.inputBy}', '${x.nama}')"><i class="fab fa-whatsapp"></i> Tegur</button>
+                        </td>
+                    </tr>`; 
+                }).join(''); 
+                
+                b.innerHTML=`<div class="card">
+                    <h4>Monitoring Status Pembayaran</h4>
+                    <p><small>Warna Kuning Muncul: H-2 (Mingguan) atau H-10 (Bulanan)</small></p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Nama</th><th>Marketing</th><th>Status</th><th>Aksi</th></tr></thead>
+                            <tbody>${rows || '<tr><td colspan="4">Semua nasabah aman / lunas.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>`; 
+            }
+            else if(id === 'laporan_detail') { t.innerText = "Arsip & Detail Nasabah"; renderManagerArsip(b); }
+            else if(id === 'id_card_maker') { t.innerText = "Pembuat Kartu Pegawai"; let userOpts = dbUsers.map(u => `<option value="${u.user}">${u.user} - ${u.role}</option>`).join(''); b.innerHTML = `<div class="card"><div style="display:flex; flex-wrap:wrap; gap:20px;"><div style="flex:1; min-width:300px;"><h4>Editor Data</h4><div class="form-vertical"><label>Pilih Data</label><select class="form-control" onchange="autoFillIDCard(this.value)"><option value="">-- Pilih User --</option>${userOpts}</select><hr><label>Nama</label><input id="idc-name" class="form-control" placeholder="Nama" onkeyup="updateIDPreview()"><label>Jabatan</label><input id="idc-role" class="form-control" placeholder="Jabatan" onkeyup="updateIDPreview()"><label>NIP</label><input id="idc-nip" class="form-control" placeholder="NIP" onkeyup="updateIDPreview()"><hr><label>Foto</label><input type="file" class="form-control" onchange="updateIDPhoto(this)"><label>Background</label><input type="file" class="form-control" onchange="updateIDBg(this)"></div></div><div style="flex:1; min-width:300px; display:flex; flex-direction:column; align-items:center;"><h4>Preview</h4><div id="id-card-final" class="id-card-preview-container" style="background: white; width: 320px; height: 200px; border: 1px solid #ccc; margin: 20px auto; position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); background-size: cover; background-position: center; color: #333;"><div class="id-card-content" style="position: relative; width: 100%; height: 100%; z-index: 2; padding: 10px; display: flex; align-items: center;"><img id="prev-photo" src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" class="id-card-photo" style="width: 80px; height: 100px; background: #ddd; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div class="id-card-info" style="margin-left: 15px;"><h3 style="margin:0; font-size:16px; color:var(--primary); text-transform:uppercase;" id="prev-name">NAMA</h3><p style="margin:0; font-size:12px; font-weight:bold; color:var(--secondary);" id="prev-role">JABATAN</p><p style="margin:5px 0 0 0; font-size:10px;">ID: <span id="prev-nip">000000</span></p></div><div style="position:absolute; top:10px; right:10px; text-align:right;"><img src="${settings.logo}" style="width:30px;"><div style="font-size:8px; font-weight:bold; color:var(--primary);">${settings.nama}</div></div></div></div><button class="btn btn-primary" style="margin-top:20px;" onclick="generatePDF('id-card-final', 'ID_Card')"><i class="fas fa-print"></i> Cetak</button></div></div></div>`; }
+            else if(id === 'setting_margin') { 
+                t.innerText = "Setting Margin (Keuntungan)"; 
+                b.innerHTML = `
+                <div class="card">
+                    <h4>Unit SPS (Simpan Pinjam)</h4>
+                    <div class="form-vertical">
+                        <label>Bunga Bulanan (%)</label>
+                        <input id="set-sps-mo" type="number" class="form-control" value="${settings.margins.sps}">
+                        <label>Bunga Mingguan (%)</label>
+                        <input id="set-sps-wk" type="number" class="form-control" value="${settings.margins_weekly.sps}">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h4>Unit KMS (Kredit Motor)</h4>
+                    <div class="form-vertical">
+                        <label>Bunga Bulanan (%)</label>
+                        <input id="set-kms-mo" type="number" class="form-control" value="${settings.margins.kms}">
+                        <label>Bunga Mingguan (%)</label>
+                        <input id="set-kms-wk" type="number" class="form-control" value="${settings.margins_weekly.kms}">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h4>Unit Gadai</h4>
+                    <div class="form-vertical">
+                        <label>Bunga Bulanan (%)</label>
+                        <input id="set-gadai-mo" type="number" class="form-control" value="${settings.margins.gadai}">
+                        <label>Bunga Mingguan (%)</label>
+                        <input id="set-gadai-wk" type="number" class="form-control" value="${settings.margins_weekly.gadai}">
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveRealMargins()" style="width:100%; padding:15px; font-weight:bold;">
+                    <i class="fas fa-save"></i> SIMPAN PERUBAHAN
+                </button>`; 
+            }
+            else if(id==='simpanan_wajib') { t.innerText = "Iuran Wajib Anggota"; let users = dbUsers.filter(u=>u.role!=='admin'); let userOpt = users.map(u=>`<option value="${u.user}">${u.user} (${u.role})</option>`).join(''); let history = dbSimpananWajib.map(s=>`<tr><td data-label="Tgl">${new Date(s.date).toLocaleDateString()}</td><td data-label="Nama">${s.user}</td><td data-label="Jml">Rp ${parseInt(s.amount).toLocaleString()}</td></tr>`).join(''); b.innerHTML=`<div class="card"><h4>Input Pembayaran Iuran</h4><div class="form-vertical" style="display:flex; gap:10px; flex-wrap:wrap;"><select id="sw-user" class="form-control" style="flex:1">${userOpt}</select><input class="form-control" value="Rp ${parseInt(settings.simpananWajib).toLocaleString()}" readonly style="width:120px"><button class="btn btn-primary" onclick="saveSimpananWajib()">Terima Bayar</button></div></div><div class="card"><h4>Riwayat Pembayaran</h4><div class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Nama</th><th>Jumlah</th></tr></thead><tbody>${history}</tbody></table></div></div>`; }
+            else if(id==='arus_kas') { t.innerText="Buku Kas Unit (" + activeApp.toUpperCase() + ")"; let rows = dbArusKas.filter(x=>x.unit===activeApp).map(x=>`<tr><td data-label="Tgl">${new Date(x.date).toLocaleDateString()}</td><td data-label="Tipe"><span class="badge" style="background:${x.type=='Masuk'?'#d4edda':'#f8d7da'}; color:${x.type=='Masuk'?'#155724':'#721c24'}; padding:5px 10px; border-radius:15px;">${x.type}</span></td><td data-label="Jml">Rp ${parseInt(x.amount).toLocaleString()}</td><td data-label="Ket">${x.desc}</td></tr>`).join(''); b.innerHTML=`<div class="card"><h4>Input Transaksi Harian Unit</h4><div class="form-vertical"><select id="k-type" class="form-control"><option value="Masuk">Uang Masuk</option><option value="Keluar">Uang Keluar</option></select><input id="k-amt" type="number" class="form-control" placeholder="Nominal"><input id="k-desc" class="form-control" placeholder="Keterangan"><button class="btn btn-primary" onclick="saveKas()">Simpan Transaksi</button></div></div><div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h4>Buku Kas Unit</h4><button class="btn btn-sm btn-ghost" onclick="generatePDF('arus-table', 'Laporan_Arus_Kas'); printLaporanKas('${activeApp}')"><i class="fas fa-print"></i> PDF</button></div><div id="arus-table" class="table-responsive"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Nominal</th><th>Ket</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id==='input') { 
+                if(activeUser.isEligible === false) { b.innerHTML = `<div class="card" style="border-left:5px solid red"><h4>Akses Ditangguhkan</h4><p>Silakan hubungi Sekretaris/Manager.</p></div>`; } else {
+                    t.innerText="Input Nasabah"; let tenorOpt = activeApp==='sps' ? `<select id="i-tenor-type" class="form-control"><option value="Bulan">Bulanan</option><option value="Minggu">Mingguan</option></select>` : `<input type="hidden" id="i-tenor-type" value="Bulan"><input class="form-control" value="Bulanan" readonly>`; let ex=activeApp==='kms'?`<input id="i-dp" class="form-control" placeholder="DP (Rp)">`: (activeApp==='gadai'?`<input id="i-jam" class="form-control" placeholder="Barang Jaminan">`:''); 
+                    b.innerHTML=`<div class="card" style="max-width:600px"><div class="form-vertical"><label>Data Diri</label><input id="i-nm" class="form-control" placeholder="Nama Lengkap"><select id="i-jk" class="form-control"><option value="">-- Pilih Jenis Kelamin --</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select><input id="i-nik" class="form-control" placeholder="NIK"><input id="i-al" class="form-control" placeholder="Alamat"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><input id="i-wa" class="form-control" placeholder="No. WA"><input id="i-em" class="form-control" placeholder="Email"></div><label>Pengajuan</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><input id="i-pl" class="form-control" placeholder="Plafond (Rp)"><input id="i-tn" class="form-control" placeholder="Lama Tenor (Angka)"></div><label>Tipe Tenor</label>${tenorOpt}${ex}<hr><div class="form-group"><label>Foto KTP</label><div class="ktp-frame"><input type="file" onchange="readKTPPhoto(this)" style="position:relative; z-index:2;"></div></div><div class="form-group"><label>Foto Wajah</label><input type="file" onchange="readFoto(this)"></div><button class="btn btn-primary" onclick="subNas()">Simpan Data</button></div></div>`; 
+                }
+            }
+            else if(id==='input_tabungan') { 
+                t.innerText="Input Tabungan"; 
+                let tenorOpt = `<select id="t-tenor-type" class="form-control"><option value="Harian">Harian</option><option value="Minggu">Mingguan</option><option value="Bulan">Bulanan</option></select>`; 
+                
+                b.innerHTML=`
+                <div class="card" style="max-width:600px">
+                    <div class="form-vertical">
+                        <h4>Buka Rekening</h4>
+                        <input id="t-nm" class="form-control" placeholder="Nama Nasabah">
+                        <input id="t-setoran" type="number" class="form-control" placeholder="Setoran Awal (Rp)">
+                        
+                        <label>Periode Menabung</label>
+                        ${tenorOpt}
+                        <input id="t-tenor" class="form-control" placeholder="Lama Menabung (Angka)">
+                        
+                        <label style="color:green; font-weight:bold;">Biaya Admin (Masuk Unit)</label>
+                        <input id="t-adm" type="number" class="form-control" placeholder="Contoh: 5000" value="5000">
+                        <hr>
+                        
+                        <button class="btn btn-success" onclick="saveTabungan()">Buka Rekening</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4>Daftar Rekening</h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Nama</th><th>Saldo</th><th>Aksi</th></tr></thead>
+                            <tbody>${dbTabungan.map(t => `<tr><td>${t.nama}</td><td>Rp ${parseInt(t.saldo).toLocaleString()}</td><td><button class="btn btn-sm btn-primary" onclick="printBukuTabungan('${t.id}')">PDF Buku</button></td></tr>`).join('')}</tbody>
+                        </table>
+                    </div>
+                </div>`; 
+            }
+            else if(id==='identitas') { t.innerText="Identitas"; b.innerHTML=`<div class="card"><h4>Identitas Lembaga</h4><div class="form-vertical"><label>Nama BMT</label><input id="s-nm" class="form-control" value="${settings.nama}"><label>Nomor Izin</label><input id="s-iz" class="form-control" value="${settings.izin}"><label>Alamat Lengkap</label><input id="s-al" class="form-control" value="${settings.alamat}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label>Email</label><input id="s-em" class="form-control" value="${settings.email}"></div><div><label>WA</label><input id="s-wa" class="form-control" value="${settings.wa}"></div></div><hr><label><b>Logo Baru:</b></label><input type="file" onchange="updateLogo(this)"><label><b>Wallpaper:</b></label><input type="file" onchange="updateWall(this)"><button class="btn btn-primary" onclick="saveID()">Simpan</button></div></div>`; }
+            else if(id==='home' && activeApp==='induk') { t.innerText="Dashboard Induk"; let prof = parseInt(settings.shu.profit); let totalAsset = dbDana.reduce((a,b)=>a+parseInt(b.amount),0); let shuAnggotaTotal = prof * (settings.shu.p_nasabah / 100); let totalPinjamanAll = dbNasabah.filter(x=>x.status==='Approved').reduce((a,b)=>a+parseInt(b.plafond),0); let shuRows = dbNasabah.filter(x=>x.status==='Approved').map(x => { let share = (parseInt(x.plafond) / totalPinjamanAll) * shuAnggotaTotal; if(isNaN(share)) share = 0; return `<tr><td data-label="Nama">${x.nama}</td><td data-label="Pinjaman">Rp ${parseInt(x.plafond).toLocaleString()}</td><td data-label="SHU">Rp ${share.toLocaleString(undefined, {maximumFractionDigits:0})}</td></tr>`; }).join(''); b.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px,1fr));gap:20px;margin-bottom:20px"><div class="card" style="background:var(--primary-gradient);color:white"><h3>SHU Berjalan</h3><h2>Rp ${prof.toLocaleString()}</h2></div><div class="card" style="background:var(--secondary-gradient);color:#0f3d3e"><h3>Total Aset</h3><h2>Rp ${totalAsset.toLocaleString()}</h2></div></div><div class="card"><h3>Estimasi SHU Anggota</h3><p>Alokasi: <b>Rp ${shuAnggotaTotal.toLocaleString()}</b></p><div class="table-responsive"><table><thead><tr><th>Nama</th><th>Pinjaman</th><th>Est. SHU</th></tr></thead><tbody>${shuRows || '<tr><td colspan="3">Data kosong.</td></tr>'}</tbody></table></div></div>`; }
+            else if(id==='home') { 
+                // FILTER LOGIC:
+                // Jika Marketing => Hanya lihat nasabah buatannya sendiri
+                // Jika Manager  => Lihat semua nasabah di unit tersebut
+                let activeClients = dbNasabah.filter(x => {
+                    let isUnit = x.unit === activeApp;
+                    let isAppr = x.status === 'Approved';
+                    let isMine = (activeUser.role === 'MARKETING') ? (x.inputBy === activeUser.user) : true;
+                    return isUnit && isAppr && isMine;
+                });
+
+                let totalPlafond = activeClients.reduce((a, b) => a + parseInt(b.plafond), 0); 
+                
+                // TAMPILAN DASHBOARD
+                b.innerHTML = `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div class="card" style="background:var(--primary-gradient); color:white;">
+                        <h3>Nasabah Aktif ${activeUser.role === 'MARKETING' ? '(Saya)' : '(Unit)'}</h3>
+                        <h1 style="margin:10px 0;">${activeClients.length}</h1>
+                    </div>
+                    <div class="card" style="background:var(--secondary-gradient); color:#0f3d3e;">
+                        <h3>Total Baki Debet</h3>
+                        <h1 style="margin:10px 0;">Rp ${totalPlafond.toLocaleString()}</h1>
+                    </div>
+                </div>`; 
+            }
+            else if(id==='users') { t.innerText="Manajemen Pengguna"; let rows=dbUsers.map((u,i)=>`<tr><td data-label="Foto"><img src="${u.photo||'https://cdn-icons-png.flaticon.com/512/1077/1077114.png'}" class="user-thumb" style="width:40px;height:40px;border-radius:50%;"></td><td data-label="User">${u.user}</td><td data-label="Role">${u.role}</td><td data-label="Unit">${u.unitScope ? u.unitScope.toUpperCase() : u.app.toUpperCase()}</td><td data-label="Aksi"><button class="btn btn-danger btn-sm" onclick="delUser(${i})">Del</button></td></tr>`).join(''); b.innerHTML=`<div class="card" style="max-width:600px;"><h4>Tambah User</h4><div class="form-vertical"><label>Identitas</label><input id="n-nama" class="form-control" placeholder="Nama"><input id="n-hp" class="form-control" placeholder="HP"><input id="n-tgl" type="date" class="form-control"><textarea id="n-al" class="form-control" placeholder="Alamat"></textarea><hr><label>Akun</label><input id="n-u" class="form-control" placeholder="Username"><select id="n-r" class="form-control" onchange="toggleUnitSelect(this.value)"><option value="anggota">Anggota</option><option value="ketua">Ketua (Pusat)</option> <option value="anggota">Anggota</option><option value="admin">Admin</option><option value="bendahara">Bendahara</option><option value="sekretaris">Sekretaris</option><option value="marketing">Marketing</option><option value="manager">Manager</option><option value="accounting">Accounting</option><option value="nasabah">Nasabah</option></select><select id="n-unit" class="form-control hidden"><option value="sps">Simpan Pinjam (SPS)</option><option value="kms">Kredit Motor (KMS)</option><option value="gadai">Gadai Syariah</option></select><input id="n-p" type="text" class="form-control" placeholder="Password"><label>Foto</label><input type="file" class="form-control" onchange="readUserPhoto(this)"><button class="btn btn-primary" onclick="addUser()">Simpan User</button></div></div><div class="card"><div class="table-responsive"><table><thead><tr><th>Foto</th><th>User</th><th>Role</th><th>App</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id==='monitoring_pegawai') { t.innerText="Monitoring"; let logs = dbPresensi.map(p => `<tr><td data-label="Waktu">${new Date(p.time).toLocaleString()}</td><td data-label="Nama">${p.user}</td><td data-label="Status">${p.type}</td><td data-label="Ket">${p.ket||'-'}</td></tr>`).join(''); let users = dbUsers.filter(u=>['manager','marketing','accounting'].includes(u.role)).map(u=>`<tr><td data-label="Nama">${u.user}</td><td data-label="Role">${u.role}</td><td data-label="ID"><button class="btn btn-sm btn-primary" onclick="printIDCard('${u.user}','${u.role}')">ID Card</button></td></tr>`).join(''); b.innerHTML=`<div class="card"><h3>Laporan Kehadiran</h3><button class="btn btn-success" onclick="generatePDF('printable-area', 'Laporan_Presensi'); printLaporanPresensi()">Cetak PDF</button><div class="table-responsive"><table><thead><tr><th>Waktu</th><th>Nama</th><th>Status</th><th>Ket</th></tr></thead><tbody>${logs}</tbody></table></div></div><div class="card"><h3>Cetak ID Pegawai</h3><div class="table-responsive"><table><thead><tr><th>Nama</th><th>Jabatan</th><th>Aksi</th></tr></thead><tbody>${users}</tbody></table></div></div>`; }
+            else if(id==='laporan_pusat') { t.innerText="Pusat Laporan"; let sar=dbSarpras.map((s,i)=>`<tr><td data-label="Unit">${s.unit}</td><td data-label="Item">${s.item}</td><td data-label="Status">${s.status}</td><td data-label="Aksi">${s.status=='Pending'?`<button class="btn btn-success btn-sm" onclick="accSarpras(${i})">ACC</button>`:''}</td></tr>`).join(''); b.innerHTML=`<div class="card"><h3>Laporan & Database</h3><div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;"><button class="btn btn-success" onclick="generatePDF('printable-area', 'Laporan_Sarpras'); printLaporanSarpras()">Laporan Sarpras</button><button class="btn btn-primary" onclick="generatePDF('printable-area', 'Database_Nasabah'); printDatabaseNasabah()">Database Nasabah</button></div><div class="table-responsive"><table><thead><tr><th>Unit</th><th>Item</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${sar}</tbody></table></div></div>`; }
+            else if(id==='distribusi_modal') { t.innerText="Penyaluran & Limit"; let pendings = dbDana.filter(d => d.status === 'Pending').map((d,i) => `<tr><td data-label="Tgl">${new Date(d.date).toLocaleDateString()}</td><td data-label="Unit">${d.unit.toUpperCase()}</td><td data-label="Jml">Rp ${parseInt(d.amount).toLocaleString()}</td><td data-label="Aksi"><button class="btn btn-sm btn-success" onclick="accDana('${d.id}')">ACC</button></td></tr>`).join(''); let history = dbDana.filter(d => d.status === 'Approved').map(d => `<tr><td data-label="Tgl">${new Date(d.date).toLocaleDateString()}</td><td data-label="Unit">${d.unit.toUpperCase()}</td><td data-label="Jml">Rp ${parseInt(d.amount).toLocaleString()}</td><td data-label="Ket">${d.desc}</td>${activeUser.role==='BENDAHARA' && d.desc.includes('Modal Awal') ? `<td data-label="Aksi"><button class="btn btn-danger btn-sm" onclick="deleteModalAwal('${d.id}')">Hapus</button></td>` : ''}</tr>`).join(''); let addModalHtml = activeUser.role === 'BENDAHARA' ? `<h4>Tambah Modal Awal BMT</h4><div class="form-vertical" style="background:#e8f5e9; padding:15px; border-radius:8px; margin-bottom:20px;"><select id="bm-unit" class="form-control"><option value="sps">Simpan Pinjam</option><option value="kms">Kredit Motor</option><option value="gadai">Gadai Syariah</option></select><input id="bm-amt" type="number" class="form-control" placeholder="Jumlah Modal Awal (Rp)"><button class="btn btn-success" onclick="addModalAwal()"><i class="fas fa-plus-circle"></i> Tambah Modal Awal</button></div>` : ''; b.innerHTML = `<div class="card" style="border-left: 5px solid red;"><h4>Batasan Penggunaan Dana</h4><div class="form-vertical"><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;"><div><label>Limit SPS (%)</label><input type="number" id="lim-sps" class="form-control" value="${settings.limits.sps}"></div><div><label>Limit KMS (%)</label><input type="number" id="lim-kms" class="form-control" value="${settings.limits.kms}"></div><div><label>Limit Gadai (%)</label><input type="number" id="lim-gadai" class="form-control" value="${settings.limits.gadai}"></div></div><button class="btn btn-danger" onclick="saveLimits()">Simpan & Kunci</button></div></div>${activeUser.role==='BENDAHARA' ? `<div class="card">${addModalHtml}</div>` : ''}<div class="card"><h4>Approval & Penyaluran <button class="btn btn-sm btn-primary" style="float:right" onclick="generatePDF('printable-area', 'Laporan_Penyaluran'); printLaporanPenyaluran()">Cetak Laporan</button></h4><div class="table-responsive"><table><thead><tr><th>Tgl</th><th>Unit</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>${pendings.length?pendings:'<tr><td colspan="4">Tidak ada pengajuan.</td></tr>'}</tbody></table></div><br><h4>Input Penyaluran Manual</h4><div class="form-vertical"><select id="m-unit" class="form-control"><option value="sps">Simpan Pinjam</option><option value="kms">Kredit Motor</option><option value="gadai">Gadai Syariah</option></select><input id="m-amount" type="number" class="form-control" placeholder="Nominal (Rp)"><input id="m-desc" class="form-control" placeholder="Ket"><button class="btn btn-primary" onclick="saveModal('Approved')">Salurkan</button></div></div><div class="card"><h4>Riwayat</h4><div class="table-responsive"><table><thead><tr><th>Tgl</th><th>Unit</th><th>Nominal</th><th>Ket</th>${activeUser.role==='BENDAHARA'?'<th>Aksi</th>':''}</tr></thead><tbody>${history}</tbody></table></div></div>`; }
+            else if(id==='dana_unit') { 
+                t.innerText="Manajemen Dana (Revolving)"; 
+                
+                // 1. Total Modal dari Pusat (Approved)
+                let modalPusat = dbDana.filter(x => x.unit === activeApp && x.status === 'Approved').reduce((a,b)=>a+parseInt(b.amount),0); 
+                
+                // 2. Total Uang Masuk Kembali (Angsuran & Pelunasan)
+                let uangBalik = dbArusKas.filter(x => x.unit === activeApp && x.type === 'Masuk').reduce((a,b)=>a+parseInt(b.amount),0);
+                
+                // 3. Total Uang Keluar untuk Nasabah (Plafond Cair)
+                let uangKeluarNasabah = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved').reduce((a,b)=>a+parseInt(b.plafond),0); 
+                
+                // 4. Total Pengeluaran Operasional Unit (Gaji, ATK, Bagi Hasil, dll)
+                let uangKeluarOps = dbArusKas.filter(x => x.unit === activeApp && x.type === 'Keluar').reduce((a,b)=>a+parseInt(b.amount),0);
+
+                // RUMUS DANA TERSEDIA (SALDO REAL)
+                // (Modal + Pemasukan) - (Pinjaman Cair + Pengeluaran Ops)
+                let sisa = (modalPusat + uangBalik) - (uangKeluarNasabah + uangKeluarOps); 
+                
+                b.innerHTML = `
+                <div class="card" style="background:${sisa<0?'#ffebee':'#e8f5e9'}">
+                    <small>Dana Tersedia (Bisa Disalurkan)</small>
+                    <h1 style="color:${sisa<0?'red':'green'}">Rp ${sisa.toLocaleString()}</h1>
+                    <p style="font-size:0.8rem; margin-top:5px;">
+                        <i class="fas fa-info-circle"></i> Rumus: (Modal + Angsuran Masuk) - (Pinjaman Cair + Biaya Ops)
+                    </p>
+                </div>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div class="card" style="background:#f8f9fa;">
+                        <small>Total Modal Pusat</small>
+                        <h4>+ Rp ${modalPusat.toLocaleString()}</h4>
+                    </div>
+                    <div class="card" style="background:#f8f9fa;">
+                        <small>Total Angsuran Masuk</small>
+                        <h4 style="color:green">+ Rp ${uangBalik.toLocaleString()}</h4>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>Ajukan Tambahan Dana</h4>
+                    <div class="form-vertical">
+                        <input id="req-amt" type="number" class="form-control" placeholder="Nominal Pengajuan">
+                        <input id="req-desc" class="form-control" placeholder="Keperluan">
+                        <button class="btn btn-primary" onclick="reqDana()">Kirim ke Pusat</button>
+                    </div>
+                </div>`; 
+            }
+            else if(id==='surat_induk') { t.innerText="Surat Menyurat"; let rows=dbSurat.map(s=>`<tr><td data-label="No">${s.no}</td><td data-label="Tuj">${s.tujuan}</td><td data-label="Aksi"><button class="btn btn-sm btn-primary" onclick="printSurat('${s.no}','${s.tujuan}','${s.isi}')">Cetak</button></td></tr>`).join(''); b.innerHTML=`<div class="card"><h4>Buat Surat</h4><div class="form-vertical"><input id="s-tuj" class="form-control" placeholder="Tujuan"><input id="s-per" class="form-control" placeholder="Perihal"><textarea id="s-isi" class="form-control" placeholder="Isi Surat..."></textarea><div style="display:flex;gap:10px"><button class="btn btn-success" onclick="saveSurat('Keluar')">Surat Keluar (Auto No)</button><button class="btn btn-warning" onclick="saveSurat('Masuk')">Log Surat Masuk</button></div></div></div><div class="card"><h4>Arsip</h4><div class="table-responsive"><table><thead><tr><th>No</th><th>Tujuan</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id==='sarpras_approval') { t.innerText="Approval Sarpras"; let rows=dbSarpras.map((s,i)=>`<tr><td data-label="Unit">${s.unit.toUpperCase()}</td><td data-label="Item">${s.item}</td><td data-label="Alasan">${s.alasan}</td><td data-label="Status"><span class="badge" style="background:${s.status=='Pending'?'#fff3cd':'#d4edda'}">${s.status}</span></td><td data-label="Aksi">${s.status=='Pending'?`<button class="btn btn-sm btn-success" onclick="accSarpras(${i})">ACC</button>`:''}</td></tr>`).join(''); b.innerHTML=`<div class="card"><h4>Pengajuan Unit</h4><div class="table-responsive"><table><thead><tr><th>Unit</th><th>Item</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
+            else if(id==='req_sarpras') { t.innerText="Ajukan Sarpras"; b.innerHTML=`<div class="card"><div class="form-vertical"><input id="sp-i" class="form-control" placeholder="Barang"><input id="sp-a" class="form-control" placeholder="Alasan"><button class="btn btn-primary" onclick="sendSarpras()">Kirim</button></div></div>`; }
+            else { b.innerHTML=`<div class="card">Fitur Aktif</div>`; }
+        }
+
+        function renderManagerArsip(container) {
+            let active = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved' && x.payStatus !== 'Lunas');
+            let lunas = dbNasabah.filter(x => x.unit === activeApp && x.payStatus === 'Lunas');
+            let activeRows = active.map(x => `<tr><td>${x.nama}</td><td>Rp ${parseInt(x.plafond).toLocaleString()}</td><td><span class="badge" style="background:#f8d7da; color:#721c24;">Belum Lunas</span></td></tr>`).join('');
+            let lunasRows = lunas.map(x => `<tr><td>${x.nama}</td><td>Rp ${parseInt(x.plafond).toLocaleString()}</td><td><button class="btn btn-danger btn-sm" onclick="deleteLunas('${x.id}')">Hapus</button></td></tr>`).join('');
+            container.innerHTML = `<div class="card"><h4>Nasabah Aktif (Berjalan)</h4><div class="table-responsive"><table><thead><tr><th>Nama</th><th>Plafond</th><th>Status</th></tr></thead><tbody>${activeRows || '<tr><td colspan="3">Kosong</td></tr>'}</tbody></table></div></div><div class="card"><div style="display:flex; justify-content:space-between; align-items:center;"><h4>Arsip Nasabah Lunas</h4><button class="btn btn-success" onclick="generatePDF('printable-area', 'Arsip_Lunas'); printArsipLunas()"><i class="fas fa-file-pdf"></i> Download PDF</button></div><div class="table-responsive"><table><thead><tr><th>Nama</th><th>Plafond</th><th>Aksi</th></tr></thead><tbody>${lunasRows || '<tr><td colspan="3">Kosong</td></tr>'}</tbody></table></div></div>`;
+        }
+
+        // --- NEW PAYMENT FUNCTION ---
+        function bayar(id, angsuran) { 
+    let index = dbNasabah.findIndex(x => x.id == id); 
+    if (index === -1) return; 
+    let d = dbNasabah[index];
+
+    // HANYA UNTUK BAYAR CICILAN BIASA
+    if(confirm(`Terima pembayaran ANGSURAN dari ${d.nama} sebesar Rp ${angsuran.toLocaleString()}?`)) {
+        
+        // 1. Catat Transaksi
+        dbArusKas.push({ date: Date.now(), unit: activeApp, type: 'Masuk', amount: angsuran, desc: `Angsuran a.n ${d.nama}` });
+        
+        // 2. Majukan Tanggal Jatuh Tempo
+        let currentDue = d.nextDueDate ? new Date(d.nextDueDate) : new Date(); 
+        if(d.tenorType === 'Minggu') {
+            currentDue.setDate(currentDue.getDate() + 7);
+        } else {
+            currentDue.setMonth(currentDue.getMonth() + 1);
+        }
+        dbNasabah[index].nextDueDate = currentDue.getTime();
+
+        saveToCloud(); 
+        
+        // WA Bukti Bayar
+        let sapaan = d.gender === 'L' ? 'Bapak' : 'Ibu';
+        let msg = settings.pesanBayar.replace('{sapaan}', sapaan).replace('{nama}', d.nama).replace('{tagihan}', 'Rp ' + parseInt(angsuran).toLocaleString()) + `\n\nJatuh Tempo Berikutnya: ${currentDue.toLocaleDateString()}`;
+        openWA(d.wa, msg);
+        
+        alert("Angsuran Diterima. Jadwal diperbarui.");
+        page('billing'); 
+    }
+}
+        // --- FUNGSI BARU: PELUNASAN TOTAL ---
+function prosesPelunasan(id, totalHutangAwal) {
+    let index = dbNasabah.findIndex(x => x.id == id);
+    if (index === -1) return;
+    let d = dbNasabah[index];
+
+    // 1. Konfirmasi Awal
+    let inputBayar = prompt(`PELUNASAN TOTAL a.n ${d.nama}\n\nMasukkan Nominal Pelunasan (Sisa Hutang):`, "0");
+    
+    if (!inputBayar || parseInt(inputBayar) <= 0) return; // Batal jika kosong
+
+    if (confirm(`Yakin memproses PELUNASAN untuk ${d.nama} sebesar Rp ${parseInt(inputBayar).toLocaleString()}?\n\nStatus nasabah akan berubah menjadi LUNAS (Selesai).`)) {
+        
+        // 2. Catat Uang Masuk (Tipe Khusus: Pelunasan)
+        dbArusKas.push({ 
+            date: Date.now(), 
+            unit: activeApp, 
+            type: 'Masuk', 
+            amount: parseInt(inputBayar), 
+            desc: `Pelunasan Dini a.n ${d.nama}` 
+        });
+
+        // 3. Update Status Nasabah jadi LUNAS
+        dbNasabah[index].payStatus = 'Lunas';
+        
+        // (Opsional) Hapus tagihan berikutnya karena sudah lunas
+        dbNasabah[index].nextDueDate = null;
+
+        saveToCloud();
+        
+        // 4. Kirim WA Terima Kasih
+        let msg = `Alhamdulillah. Terima kasih Bapak/Ibu ${d.nama}, pembiayaan Anda telah LUNAS sebesar Rp ${parseInt(inputBayar).toLocaleString()}. Semoga berkah.`;
+        openWA(d.wa, msg);
+
+        alert("Pelunasan Berhasil! Nasabah kini masuk ke Arsip Lunas.");
+        page('billing');
+    }
+}
+
+        function deleteLunas(id) { if(confirm("Hapus permanen?")) { let idx = dbNasabah.findIndex(x => x.id == id); dbNasabah.splice(idx, 1); saveToCloud(); page('laporan_detail'); } }
+        function printArsipLunas() { let lunas = dbNasabah.filter(x => x.unit === activeApp && x.payStatus === 'Lunas'); let rows = lunas.map((x,i) => `<tr><td>${i+1}</td><td>${x.nama}</td><td>${x.unit.toUpperCase()}</td><td>Rp ${parseInt(x.plafond).toLocaleString()}</td></tr>`).join(''); let html = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>ARSIP NASABAH LUNAS</p></div></div><div class="doc-body"><table class="fin-table"><thead><tr><th>No</th><th>Nama</th><th>Unit</th><th>Plafond</th></tr></thead><tbody>${rows}</tbody></table><br><div style="text-align:right">Manager Unit</div></div></div>`; document.getElementById('printable-area').innerHTML = html; }
+        function addModalAwal() { let unit = document.getElementById('bm-unit').value; let amt = document.getElementById('bm-amt').value; if(!amt) return alert("Isi nominal!"); dbDana.push({id: Date.now(), date: Date.now(), unit: unit, amount: amt, status: 'Approved', desc: 'Modal Awal BMT'}); saveToCloud(); alert("Modal Awal Ditambahkan"); page('distribusi_modal'); }
+        function deleteModalAwal(id) { if(confirm("Hapus Modal Awal ini?")) { let idx = dbDana.findIndex(x => x.id == id); dbDana.splice(idx, 1); saveToCloud(); page('distribusi_modal'); } }
+        function toggleUnitSelect(val) { let sel = document.getElementById('n-unit'); if(val === 'marketing' || val === 'manager' || val === 'accounting') { sel.classList.remove('hidden'); } else { sel.classList.add('hidden'); } }
+        function toggleChat() { let box = document.getElementById('chat-box'); box.style.display = box.style.display === 'flex' ? 'none' : 'flex'; if(box.style.display === 'flex') renderChat(); }
+        function sendChat(sender) { let inp = sender === 'Guest' ? document.getElementById('chat-input') : document.getElementById('sek-chat-input'); let txt = inp.value; if(!txt) return; dbChat.push({sender: sender, msg: txt, time: Date.now()}); saveToCloud(); inp.value = ''; if(sender === 'Guest') renderChat(); else renderChatSekretaris(); }
+        function renderChat() { let b = document.getElementById('chat-body'); if(!b) return; b.innerHTML = dbChat.map(c => `<div class="msg ${c.sender==='Guest'?'out':'in'}" style="padding:8px 12px; border-radius:8px; font-size:0.9rem; max-width:85%; ${c.sender==='Guest'?'align-self:flex-end; background:#dcf8c6; border:1px solid #ccebb8;':'align-self:flex-start; background:white; border:1px solid #ddd;'}"><b>${c.sender}</b>: ${c.msg}</div>`).join(''); b.scrollTop = b.scrollHeight; }
+        function renderChatSekretaris() { let b = document.getElementById('sek-chat-body'); if(!b) return; b.innerHTML = dbChat.map(c => `<div class="msg ${c.sender==='Sekretaris'?'out':'in'}" style="padding:8px 12px; border-radius:8px; font-size:0.9rem; max-width:85%; ${c.sender==='Sekretaris'?'align-self:flex-end; background:#dcf8c6; border:1px solid #ccebb8;':'align-self:flex-start; background:white; border:1px solid #ddd;'}"><b>${c.sender}</b>: ${c.msg}</div>`).join(''); b.scrollTop = b.scrollHeight; }
+        function openMeeting() { const domain = 'meet.jit.si'; const options = { roomName: 'BMT_Rapat_Dadakan_' + Math.floor(Math.random() * 100), width: '100%', height: '100%', parentNode: document.querySelector('#jitsi-container'), lang: 'id' }; const api = new JitsiMeetExternalAPI(domain, options); }
+        function updateIDPreview() { document.getElementById('prev-name').innerText = document.getElementById('idc-name').value || "NAMA PEGAWAI"; document.getElementById('prev-role').innerText = document.getElementById('idc-role').value || "JABATAN"; document.getElementById('prev-nip').innerText = document.getElementById('idc-nip').value || "000000"; }
+        function updateIDPhoto(input) { if(input.files[0]) resizeImage(input.files[0], (res) => { document.getElementById('prev-photo').src = res; }, 300); }
+        function updateIDBg(input) { if(input.files[0]) { const reader = new FileReader(); reader.readAsDataURL(input.files[0]); reader.onload = function(e) { document.getElementById('id-card-final').style.backgroundImage = `url('${e.target.result}')`; }}}
+        function reject(id) { let index = dbNasabah.findIndex(x => x.id == id); if(confirm('Tolak pengajuan nasabah ini?')) { dbNasabah.splice(index, 1); saveToCloud(); page('approval'); }}
+        function saveKas() { let type = document.getElementById('k-type').value; let amt = document.getElementById('k-amt').value; let desc = document.getElementById('k-desc').value; dbArusKas.push({date: Date.now(), unit: activeApp, type: type, amount: amt, desc: desc}); saveToCloud(); alert("Transaksi Dicatat!"); page('arus_kas'); }
+        function saveKasInduk() { let amt = document.getElementById('k-induk-amt').value; let desc = document.getElementById('k-induk-desc').value; if(!amt || !desc) return alert("Lengkapi data!"); dbArusKas.push({date: Date.now(), unit: 'induk', type: 'Keluar', amount: amt, desc: desc}); saveToCloud(); alert("Pengeluaran Dicatat!"); page('kas_pusat'); }
+        function saveSimpananWajib() { let u = document.getElementById('sw-user').value; let amt = settings.simpananWajib; dbSimpananWajib.push({date: Date.now(), user: u, amount: amt}); saveToCloud(); alert("Pembayaran Iuran Diterima!"); page('simpanan_wajib'); }
+        function tagihIuranWA(user) { let targetUser = dbUsers.find(x => x.user === user); let wa = targetUser ? targetUser.noHP : ''; if(!wa) wa = prompt("Masukkan Nomor WA " + user + " (628...):"); let amount = prompt("Edit Nominal Tagihan:", parseInt(settings.simpananWajib)); if(!amount) return; let msg = (settings.pesanIuran || "Segera bayar iuran.").replace('{sapaan}', 'Bapak/Ibu').replace('{nama}', user).replace('{tagihan}', 'Rp ' + parseInt(amount).toLocaleString()); if(wa) { openWA(wa, msg); } }
+        // --- HAPUS function subNas() YANG LAMA, GANTI DENGAN INI ---
+        // --- HAPUS function subNas() YANG LAMA, GANTI DENGAN INI ---
+
+        function subNas() {
+    // Fungsi Pembantu: Mengambil nilai dengan AMAN
+    const getVal = (id, defaultValue = '') => {
+        let el = document.getElementById(id);
+        return el ? el.value : defaultValue;
+    };
+
+    try {
+        // Ambil Tipe Tenor (Bulan/Minggu)
+        let type = getVal('i-tenor-type', 'Bulan'); 
+        
+        // Hitung Tanggal Jatuh Tempo
+        let firstDue = new Date();
+        if(type === 'Minggu') firstDue.setDate(firstDue.getDate() + 7);
+        else firstDue.setMonth(firstDue.getMonth() + 1);
+
+        // Ambil variable foto dengan aman
+        let fotoFinal = (typeof tempFoto !== 'undefined') ? tempFoto : '';
+        let ktpFinal = (typeof tempKTPPhoto !== 'undefined') ? tempKTPPhoto : '';
+        let userFinal = activeUser ? activeUser.user : 'Unknown';
+
+        // Susun Data Nasabah
+        let d = { 
+            id: Date.now(), 
+            unit: activeApp || 'umum', 
+            
+            // --- DATA DIRI ---
+            nama: getVal('i-nm', 'Tanpa Nama'), 
+            gender: getVal('i-jk', 'L'), 
+            nik: getVal('i-nik', '-'), 
+            alamat: getVal('i-al', '-'), 
+            wa: getVal('i-wa', '-'), 
+            email: getVal('i-em', '-'), 
+            
+            // --- DATA PENGAJUAN (YANG DIPERBAIKI) ---
+            plafond: getVal('i-pl', '0'), 
+            
+            // PERBAIKAN UTAMA DI SINI:
+            // Dulu 'i-tenor' (salah), Sekarang 'i-tn' (benar sesuai HTML)
+            tenor: getVal('i-tn', '0'), 
+            
+            tenorType: type, 
+            dp: getVal('i-dp', '0'),           
+            jaminan: getVal('i-jam', '-'),     
+            
+            // --- STATUS ---
+            status: 'Pending', 
+            payStatus: 'Belum', 
+            noSurat: '-', 
+            foto: fotoFinal,     
+            ktp: ktpFinal,       
+            inputBy: userFinal,
+            nextDueDate: firstDue.getTime() 
+        }; 
+
+        // Eksekusi Simpan
+        dbNasabah.push(d); 
+        saveToCloud(); 
+        alert('DATA BERHASIL DISIMPAN!'); 
+        page('input'); // Refresh halaman input
+
+    } catch (e) {
+        alert("SISTEM ERROR: " + e.message);
+        console.error(e);
+    }
+}
+        function waMarketing(marketingName, nasabahName) { let targetUser = dbUsers.find(x => x.user === marketingName); let wa = targetUser ? targetUser.noHP : ''; if(!wa) wa = prompt(`Masukkan Nomor WA Marketing (${marketingName}):`); let msg = `Assalamu'alaikum ${marketingName}, tolong segera follow-up nasabah atas nama ${nasabahName} karena status pembayaran bulan ini menunggak/macet. Terima kasih.`; if(wa) openWA(wa, msg); }
+        function kirimWA(id, angsuran) { let d = dbNasabah.find(x => x.id == id); let sapaan = d.gender === 'L' ? 'Bapak' : 'Ibu'; let tglJatuhTempo = new Date(); tglJatuhTempo.setDate(tglJatuhTempo.getDate() + 5); let tglStr = tglJatuhTempo.toLocaleDateString('id-ID'); let editAngsuran = prompt("Nominal Tagihan:", angsuran); if(!editAngsuran) return; let msg = settings.pesanTagih.replace('{sapaan}', sapaan).replace('{nama}', d.nama).replace('{tagihan}', 'Rp ' + parseInt(editAngsuran).toLocaleString()).replace('{tanggal}', tglStr); openWA(d.wa, msg); }
+        
+        function bayarIuranKetua(user) { dbSimpananWajib.push({date: Date.now(), user: user, amount: settings.simpananWajib}); saveToCloud(); alert('Pembayaran Diterima'); page('iuran_ketua'); }
+        function kirimInstruksiInternal() { let tuj = document.getElementById('ins-tuj').value; let pesan = document.getElementById('ins-pesan').value; if(!pesan) return alert("Pesan tidak boleh kosong"); dbInstruksi.push({id: Date.now(), toRole: tuj, message: pesan, date: Date.now(), read: false}); saveToCloud(); alert("Instruksi Terkirim"); page('kirim_instruksi'); }
+        function autoFillIDCard(user) { let u = dbUsers.find(x => x.user === user); if(u) { document.getElementById('idc-name').value = u.user; document.getElementById('idc-role').value = u.role.toUpperCase(); document.getElementById('prev-photo').src = u.photo || idCardTempPhoto; updateIDPreview(); } }
+        function saveID() { settings.nama=document.getElementById('s-nm').value; settings.izin=document.getElementById('s-iz').value; settings.alamat=document.getElementById('s-al').value; settings.email=document.getElementById('s-em').value; settings.wa=document.getElementById('s-wa').value; saveToCloud(); renderIdentitas(); alert('Saved!'); }
+        function saveLimits() { settings.limits.sps = document.getElementById('lim-sps').value; settings.limits.kms = document.getElementById('lim-kms').value; settings.limits.gadai = document.getElementById('lim-gadai').value; saveToCloud(); alert('Saved'); }
+        function accDana(id) { let i = dbDana.findIndex(d=>d.id==id); dbDana[i].status='Approved'; saveToCloud(); if(activeUser.role==='KETUA') page('approval_pusat'); else page('distribusi_modal'); }
+        function reqDana() { dbDana.push({id: Date.now(), date: Date.now(), unit: activeApp, amount: document.getElementById('req-amt').value, status: 'Pending', desc: document.getElementById('req-desc').value}); saveToCloud(); alert('Sent'); page('dana_unit'); }
+        function sendSarpras() { dbSarpras.push({unit:activeApp, item:document.getElementById('sp-i').value, alasan:document.getElementById('sp-a').value, status:'Pending'}); saveToCloud(); alert('Sent'); }
+        function accSarpras(i) { dbSarpras[i].status='Approved'; saveToCloud(); if(activeUser.role==='KETUA') page('approval_pusat'); else page('sarpras_approval'); }
+        function saveSurat(j) { let n=j==='Keluar'?`BIMA/SK/${Math.floor(Math.random()*1000)}/2026`:'-'; dbSurat.push({no:n, jenis:j, tujuan:document.getElementById('s-tuj').value, perihal:document.getElementById('s-per').value, isi:document.getElementById('s-isi').value}); saveToCloud(); alert('Saved '+n); page('surat_induk'); }
+        function wipeData(type) { if(!confirm("Yakin hapus data?")) return; if(type === 'induk') { settings = defaultConfig; dbUsers = defaultUsers; dbNasabah = []; dbSarpras = []; dbSurat = []; dbPresensi = []; dbDana = []; dbArusKas = []; dbSimpananWajib = []; dbInstruksi = []; dbChat = []; } else { dbNasabah = dbNasabah.filter(x => x.unit !== type); dbDana = dbDana.filter(x => x.unit !== type); dbSarpras = dbSarpras.filter(x => x.unit !== type); dbArusKas = dbArusKas.filter(x => x.unit !== type); } saveToCloud(); location.reload(); }
+        
+        function printLaporanPenyaluran() { let rows = dbDana.filter(d=>d.status==='Approved').map(d=>`<tr><td>${new Date(d.date).toLocaleDateString()}</td><td>${d.unit.toUpperCase()}</td><td>Rp ${parseInt(d.amount).toLocaleString()}</td><td>${d.desc}</td></tr>`).join(''); let html = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>LAPORAN PENYALURAN MODAL</p></div></div><div class="doc-body"><br><table class="fin-table"><thead><tr><th>Tanggal</th><th>Unit Penerima</th><th>Nominal</th><th>Keterangan</th></tr></thead><tbody>${rows}</tbody></table><br><br><div style="text-align:right">Bendahara BMT</div></div><div class="doc-footer">Dicetak resmi dari sistem ${settings.nama} pada ${new Date().toLocaleString()}</div></div>`; document.getElementById('printable-area').innerHTML = html; }
+        function printSurat(no, tuj, isi) { let c = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>${settings.alamat}<br>Izin: ${settings.izin} | Email: ${settings.email}</p></div></div><div style="text-align:right">${new Date().toLocaleDateString()}</div><p>Nomor: ${no}</p><p>Kepada Yth,<br><b>${tuj}</b></p><br><div class="doc-body">${isi.replace(/\n/g,'<br>')}</div><br><br><div style="text-align:right; margin-top:50px;"><p>Hormat Kami,</p><br><br><br><p>Sekretaris / Admin</p></div><div class="doc-footer">Dokumen sah tanpa tanda tangan basah jika terdapat barcode validasi.</div></div>`; document.getElementById('printable-area').innerHTML = c; generatePDF('printable-area', 'Surat_Keluar'); }
+        function printLaporanSarpras() { let rows = dbSarpras.map((s,i) => `<tr><td>${i+1}</td><td>${s.unit.toUpperCase()}</td><td>${s.item}</td><td>${s.alasan}</td><td>${s.status}</td></tr>`).join(''); let html = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>LAPORAN PENGAJUAN SARPRAS</p></div></div><div class="doc-body"><table class="fin-table"><thead><tr><th>No</th><th>Unit</th><th>Barang</th><th>Alasan</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><br><br><div style="text-align:right">Sekretaris BMT</div></div><div class="doc-footer">Internal Use Only</div></div>`; document.getElementById('printable-area').innerHTML = html; }
+        function printDatabaseNasabah() { let rows = dbNasabah.map((d,i) => `<tr><td>${i+1}</td><td>${d.unit.toUpperCase()}</td><td>${d.nama}</td><td>${d.nik}</td><td>${d.wa}</td><td>Rp ${parseInt(d.plafond).toLocaleString()}</td></tr>`).join(''); let html = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>DATABASE NASABAH</p></div></div><div class="doc-body"><table class="fin-table"><thead><tr><th>No</th><th>Unit</th><th>Nama</th><th>NIK</th><th>WA</th><th>Plafond</th></tr></thead><tbody>${rows}</tbody></table><br><br><div style="text-align:right">Sekretaris BMT</div></div></div>`; document.getElementById('printable-area').innerHTML = html; }
+        function printLaporanPresensi() { let rows = dbPresensi.map(p => `<tr><td>${new Date(p.time).toLocaleString()}</td><td>${p.user}</td><td>${p.type}</td><td>${p.ket||'-'}</td></tr>`).join(''); let html = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>LAPORAN PRESENSI PEGAWAI</p></div></div><div class="doc-body"><table class="fin-table"><thead><tr><th>Waktu</th><th>Nama Pegawai</th><th>Status</th><th>Keterangan</th></tr></thead><tbody>${rows}</tbody></table><br><br><div style="text-align:right">Sekretaris BMT</div></div></div>`; document.getElementById('printable-area').innerHTML = html; }
+        function printIDCard(user, role) { let u = dbUsers.find(x => x.user === user); let photo = u && u.photo ? u.photo : "https://cdn-icons-png.flaticon.com/512/1077/1077114.png"; let html = `<div class="id-card-print"><div class="id-card" style="display:block;"><div class="id-header">${settings.nama.toUpperCase()}</div><div class="id-body"><div class="id-photo"><img src="${photo}" style="width:100%;height:100%;object-fit:cover;"></div><div class="id-details"><b style="font-size:12pt">${user}</b><br><span>${role.toUpperCase()}</span><br><span>ID: ${Math.floor(Math.random()*100000)}</span><br><br><img class="barcode" src="https://lindell.me/JsBarcode/images/barcode.png"></div></div><div class="id-footer" style="font-size:7pt;">Kartu Identitas Pegawai Resmi</div></div></div>`; document.getElementById('printable-area').innerHTML = html; generatePDF('printable-area', 'ID_Card_' + user); }
+        function printLaporanKas(unitScope) { let title = unitScope === 'induk' ? 'LAPORAN ARUS KAS PUSAT (BMT)' : `LAPORAN KAS UNIT ${unitScope.toUpperCase()}`; let transactions = unitScope === 'induk' ? dbArusKas.filter(x => x.unit === 'induk') : dbArusKas.filter(x => x.unit === unitScope); let rows = transactions.map(x => `<tr><td>${new Date(x.date).toLocaleDateString()}</td><td>${x.type}</td><td>${x.desc}</td><td>Rp ${parseInt(x.amount).toLocaleString()}</td></tr>`).join(''); let html = `<div class="paper"><div class="bank-header"><img src="${settings.logo}" class="bank-logo"><div class="bank-info"><h1>${settings.nama}</h1><p>${title}</p></div></div><div class="doc-body"><br><table class="fin-table"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>${rows || '<tr><td colspan="4" style="text-align:center">Tidak ada data transaksi.</td></tr>'}</tbody></table><br><br><div style="display:flex; justify-content:space-between; margin-top:50px;"><div style="text-align:center;">Mengetahui,<br>Pimpinan<br><br><br><br>(....................)</div><div style="text-align:center;">Dibuat Oleh,<br>${activeUser.role}<br><br><br><br>(${activeUser.user})</div></div></div><div class="doc-footer">Dicetak resmi dari sistem ${settings.nama} pada ${new Date().toLocaleString()}</div></div>`; document.getElementById('printable-area').innerHTML = html; }
+
+        function printAkad(id) {
+            let d = dbNasabah.find(x => x.id == id);
+            if (!d) return alert("Data tidak ditemukan");
+
+            // --- DATA VARIABLES ---
+            let uName = d.unit === 'sps' ? 'MUDHARABAH (BAGI HASIL)' : (d.unit === 'kms' ? 'MURABAHAH (JUAL BELI)' : 'RAHN (GADAI)');
+            let tpl = d.unit === 'sps' ? settings.templates.sps : (d.unit === 'kms' ? settings.templates.kms : settings.templates.gadai);
+            let margin = parseInt(d.plafond) * (settings.margins[d.unit] / 100);
+            let totalTotal = parseInt(d.plafond) + margin;
+            let angsuran = totalTotal / parseInt(d.tenor);
+            let tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            let autoNum = d.noSurat !== '-' ? d.noSurat : `0${Math.floor(Math.random() * 100)}/AKAD/${new Date().getFullYear()}`;
+            let photoSrc = (d.foto && d.foto.length > 50) ? d.foto : "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
+            let logoSrc = settings.logo || "https://cdn-icons-png.flaticon.com/512/2317/2317968.png";
+
+            // --- HTML STRUKTUR (FIXED PIXEL WIDTH) ---
+            // Kita gunakan width: 750px agar konsisten di HP maupun Laptop
+            let html = `
+            <div id="akad-print-container" style="width: 750px; background: white; font-family: 'Times New Roman', serif; color: #000; padding: 20px;">
+                
+                <style>
+                    .no-break { page-break-inside: avoid; }
+                    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                    td { vertical-align: top; padding: 4px; }
+                    .header-title { font-size: 18px; font-weight: bold; text-transform: uppercase; }
+                    .header-sub { font-size: 12px; }
+                </style>
+
+                <div class="no-break" style="border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; display:flex; align-items:center;">
+                    <img src="${logoSrc}" style="width:80px; height:80px; object-fit:contain; margin-right:20px;">
+                    <div style="flex:1; text-align:center;">
+                        <div class="header-title">${settings.nama}</div>
+                        <div class="header-sub">${settings.alamat}</div>
+                        <div class="header-sub">Izin: ${settings.izin}</div>
+                    </div>
+                </div>
+
+                <div class="no-break" style="text-align: center; margin-bottom: 25px;">
+                    <b style="font-size: 16px; text-decoration: underline;">PERJANJIAN PEMBIAYAAN ${uName}</b><br>
+                    <span style="font-size: 12px;">Nomor: ${autoNum}</span>
+                </div>
+
+                <div style="margin-bottom: 15px; font-size: 14px;">Pada hari ini <b>${tglSekarang}</b>, telah disepakati perjanjian antara:</div>
+
+                <div class="no-break" style="border: 1px solid #000; padding: 15px; margin-bottom: 20px;">
+                    <table border="0">
+                        <tr>
+                            <td width="100" align="center" style="border-right:1px solid #ddd; padding-right:15px;">
+                                <img src="${photoSrc}" style="width: 3cm; height: 4cm; object-fit: cover; border:1px solid #333; display:block;">
+                                <div style="font-size:10px; margin-top:5px;">PIHAK PERTAMA</div>
+                            </td>
+                            <td style="padding-left:15px;">
+                                <table border="0">
+                                    <tr><td width="120">Nama Lengkap</td><td width="10">:</td><td><b>${d.nama.toUpperCase()}</b></td></tr>
+                                    <tr><td>NIK</td><td>:</td><td>${d.nik}</td></tr>
+                                    <tr><td>Alamat</td><td>:</td><td>${d.alamat}</td></tr>
+                                    <tr><td>No. HP/WA</td><td>:</td><td>${d.wa}</td></tr>
+                                </table>
+                                <div style="margin-top:10px; font-style:italic; font-size:12px; border-top:1px dashed #ccc; padding-top:5px;">
+                                    Bertindak atas nama diri sendiri selaku <b>PIHAK PERTAMA (NASABAH)</b>.
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-bottom: 15px; font-size: 14px;">Serta Manager Unit mewakili <b>${settings.nama}</b> selaku <b>PIHAK KEDUA</b>.</div>
+
+                <div class="no-break" style="margin-bottom: 25px;">
+                    <table border="1" cellpadding="8" style="text-align: center; font-size: 13px;">
+                        <tr style="background-color: #f0f0f0;">
+                            <th>PLAFOND</th>
+                            <th>TENOR</th>
+                            <th>MARGIN/JASA</th>
+                            <th>ANGSURAN</th>
+                        </tr>
+                        <tr>
+                            <td>Rp ${parseInt(d.plafond).toLocaleString()}</td>
+                            <td>${d.tenor} ${d.tenorType}</td>
+                            <td>Rp ${parseInt(margin).toLocaleString()}</td>
+                            <td style="font-weight: bold;">Rp ${parseInt(angsuran).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="no-break" style="border: 1px solid #000; padding: 15px; font-size: 12px; text-align: justify; margin-bottom: 40px;">
+                    <b>KETENTUAN AKAD:</b><br>
+                    ${tpl.replace(/\n/g, '<br>')}
+                    <br>1. Nasabah wajib membayar angsuran tepat waktu sesuai jadwal.
+                    <br>2. Segala perselisihan akan diselesaikan secara kekeluargaan / musyawarah.
+                </div>
+
+                <div class="no-break">
+                    <table border="0" style="text-align:center; font-size:12px;">
+                        <tr>
+                            <td width="33%">
+                                <div style="margin-bottom:10px;">PIHAK PERTAMA</div>
+                                <div style="border:1px dashed #bbb; width:60px; height:60px; margin:0 auto 10px auto; display:flex; align-items:center; justify-content:center; font-size:9px; color:#aaa;">METERAI</div>
+                                <u style="font-weight:bold;">${d.nama.toUpperCase()}</u>
+                            </td>
+                            <td width="33%">
+                                <div style="margin-bottom:70px;">SAKSI</div>
+                                <u>${d.inputBy || '....................'}</u>
+                            </td>
+                            <td width="33%">
+                                <div style="margin-bottom:70px;">PIHAK KEDUA</div>
+                                <u>( Manager Unit )</u>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="font-size: 10px; color: #888; margin-top: 30px; text-align: right;">
+                    Dicetak Otomatis: ${new Date().toLocaleString()}
+                </div>
+            </div>`;
+
+            // --- PROSES CETAK ---
+            const area = document.getElementById('printable-area');
+            area.innerHTML = html;
+            
+            // 1. Reset Gaya Area
+            area.style.display = 'flex';
+            area.style.justifyContent = 'center'; // Memastikan posisi di tengah
+            area.style.background = '#555';       // Background gelap biar kelihatan kertasnya
+            area.style.padding = '20px';
+
+            const elementToPrint = document.getElementById('akad-print-container');
+
+            const opt = {
+                margin:       [10, 10, 10, 10], // Margin PDF (bukan HTML)
+                filename:     `Akad_${d.nama.replace(/\s/g,'_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true,
+                    windowWidth: 1200 // Memaksa browser merender layout Desktop
+                    // JANGAN PAKAI 'width' DI SINI, BIARKAN OTOMATIS
+                }, 
+                jsPDF:        { unit: 'mm', format: [215, 330], orientation: 'portrait' } // Ukuran F4
+            };
+
+            html2pdf().set(opt).from(elementToPrint).save().then(() => {
+                area.style.display = 'none'; // Sembunyikan lagi setelah selesai
+            }).catch(err => {
+                alert("Gagal cetak: " + err);
+                area.style.display = 'none';
+            });
+        }
+                            
+        function printBukuTabungan(id) { let d = dbNasabah.find(x => x.id == id); let html = `<div id="buku-tabungan" style="width:100%; font-family:monospace; padding:20px; border:1px solid #ccc;"> <h3 style="text-align:center">BUKU TABUNGAN ${activeApp.toUpperCase()}</h3> <table style="width:100%; margin-top:20px;"> <tr><td>No. Rekening</td><td>: ${d.id}</td></tr> <tr><td>Nama</td><td>: ${d.nama.toUpperCase()}</td></tr> <tr><td>Alamat</td><td>: ${d.alamat || '-'}</td></tr> <tr><td>Tanggal Buka</td><td>: ${new Date(d.id).toLocaleDateString()}</td></tr> </table> <table style="width:100%; border:1px solid black; border-collapse:collapse; margin-top:20px;"> <tr style="background:#eee;"> <th style="border:1px solid black; padding:5px;">TGL</th> <th style="border:1px solid black; padding:5px;">SANDI</th> <th style="border:1px solid black; padding:5px;">DEBET</th> <th style="border:1px solid black; padding:5px;">KREDIT</th> <th style="border:1px solid black; padding:5px;">SALDO</th> </tr> <tr> <td style="border:1px solid black; padding:5px;">${new Date().toLocaleDateString()}</td> <td style="border:1px solid black; padding:5px;">01 (Setor)</td> <td style="border:1px solid black; padding:5px;">0</td> <td style="border:1px solid black; padding:5px;">${parseInt(d.saldo).toLocaleString()}</td> <td style="border:1px solid black; padding:5px;">${parseInt(d.saldo).toLocaleString()}</td> </tr></table></div>`; document.getElementById('printable-area').innerHTML = html; generatePDF('buku-tabungan', `Tabungan_${d.nama}`); }
+
+        function addUser() { 
+            let u=document.getElementById('n-u').value; let r=document.getElementById('n-r').value; let p=document.getElementById('n-p').value; 
+            let nama = document.getElementById('n-nama').value; let hp = document.getElementById('n-hp').value; let tgl = document.getElementById('n-tgl').value; let al = document.getElementById('n-al').value;
+            if(!u||!p)return alert("Username & Password Wajib!"); 
+            let a=['admin','bendahara','sekretaris','anggota'].includes(r)?'induk':'unit'; 
+            let us = document.getElementById('n-unit').value;
+            let finalScope = (r==='marketing'||r==='manager'||r==='accounting') ? us : null;
+            dbUsers.push({ user:u, role:r, app:a, password:p, photo: tempUserPhoto, unitScope: finalScope, namaLengkap: nama, noHP: hp, tglLahir: tgl, alamat: al }); 
+            tempUserPhoto = ''; saveToCloud(); alert('User Added! Bisa langsung login.'); page('users'); 
+        }
+        function delUser(i) { dbUsers.splice(i,1); saveToCloud(); page('users'); }
+        function approve(id, nominal) { 
+            // 1. Hitung Total Modal Masuk dari Pusat
+        function approve(id, nominal) { 
+            // --- 1. POPUP INPUT BIAYA ADMIN ---
+            // Manager bisa isi 0 jika tidak ada, atau 50000, 100000, dst.
+            let inputAdmin = prompt("Masukkan Biaya Administrasi (Masuk ke Kas Unit):", "0");
+            if (inputAdmin === null) return; // Batal jika tekan Cancel
+            let biayaAdmin = parseInt(inputAdmin) || 0;
+
+            // --- 2. CEK LIMIT DANA (Sama seperti sebelumnya) ---
+            let masuk = dbDana.filter(x => x.unit === activeApp && x.status === 'Approved').reduce((a,b)=>a+parseInt(b.amount),0); 
+            let keluar = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved' && x.payStatus !== 'Lunas').reduce((a,b)=>a+parseInt(b.plafond),0); 
+            let limitPersen = settings.limits[activeApp] || 100; 
+            
+            // Rumus Sisa Kuota: (Modal + Angsuran Masuk + Pendapatan Admin) - (Pinjaman Cair)
+            // Agar simpel, kita pakai logika Limit Modal vs Pinjaman Aktif saja dulu
+            if(keluar + parseInt(nominal) > masuk * (limitPersen / 100)) {
+                return alert(`GAGAL: Limit Kredit Unit ${limitPersen}% Sudah Penuh!\nTerpakai: Rp ${keluar.toLocaleString()}`);
+            }
+
+            // --- 3. PROSES ACC ---
+            let i = dbNasabah.findIndex(x => x.id == id); 
+            let d = dbNasabah[i];
+            
+            d.status = 'Approved'; 
+            d.noSurat = `BIMA/${settings.codes[activeApp]}/${Math.floor(Math.random()*1000)}/2026`; 
+            
+            // Generate Akun Login Nasabah
+            let nasabahUser = d.nama.replace(/\s/g, '').toLowerCase();
+            dbUsers.push({ user: nasabahUser, password: '123', role: 'nasabah', app: 'induk', photo: d.foto });
+
+            // --- 4. PENCATATAN KEUANGAN OTOMATIS (SISTEM KUNCI) ---
+            
+            // A. Uang Keluar (Pencairan Pinjaman)
+            dbArusKas.push({
+                date: Date.now(),
+                unit: activeApp,      // <--- KUNCI: Tetap di Unit (SPS/KMS/Gadai)
+                type: 'Keluar',
+                amount: nominal,
+                desc: `Pencairan Pembiayaan a.n ${d.nama}`
+            });
+
+            // B. Uang Masuk (Biaya Administrasi) -> MASUK KE KAS UNIT
+            if(biayaAdmin > 0) {
+                dbArusKas.push({
+                    date: Date.now(),
+                    unit: activeApp,  // <--- KUNCI: Masuk ke Dompet Unit, BUKAN PUSAT
+                    type: 'Masuk',
+                    amount: biayaAdmin,
+                    desc: `Pendapatan Admin Akad a.n ${d.nama}`
+                });
+            }
+
+            saveToCloud(); 
+            page('approval'); 
+            
+            // Info ke Manager
+            let danaDiterima = parseInt(nominal) - biayaAdmin;
+            alert(`BERHASIL DI-ACC!\n\nPlafond: Rp ${parseInt(nominal).toLocaleString()}\nAdmin Unit: Rp ${biayaAdmin.toLocaleString()}\n\nDana yang Diberikan ke Nasabah: Rp ${danaDiterima.toLocaleString()}`);
+        }
+
+            // Proses ACC
+            let i=dbNasabah.findIndex(x=>x.id==id); 
+            dbNasabah[i].status='Approved'; 
+            dbNasabah[i].noSurat=`BIMA/${settings.codes[activeApp]}/${Math.floor(Math.random()*1000)}/2026`; 
+            
+            // Buat User Login untuk Nasabah
+            let nasabahUser = dbNasabah[i].nama.replace(/\s/g, '').toLowerCase();
+            dbUsers.push({ user: nasabahUser, password: '123', role: 'nasabah', app: 'induk', photo: dbNasabah[i].foto });
+            
+            saveToCloud(); 
+            page('approval'); 
+            alert("BERHASIL: Pengajuan Disetujui.");
+        }
+        function saveModal(st) { let u = document.getElementById('m-unit').value; let a = document.getElementById('m-amount').value; dbDana.push({id: Date.now(), date: Date.now(), unit: u, amount: a, status: st, desc: document.getElementById('m-desc').value}); saveToCloud(); alert('Saved'); page('distribusi_modal'); }
+// --- SCRIPT DARURAT (VERSI PASSWORD) ---
+        function forceUpdatePermissions() {
+            // 1. MUNCULKAN POPUP PASSWORD
+            var password = prompt("Masukkan Password Admin:");
+
+            // 2. CEK PASSWORD (Ganti '12345' dengan password Anda)
+            if (password !== "hauraapp") {
+                alert("Password Salah! Akses ditolak.");
+                return; // Berhenti di sini, tidak lanjut reset
+            }
+
+            // 3. JIKA BENAR, LANJUT RESET
+            if(!confirm("Yakin ingin mereset database hak akses?")) return;
+
+            if(typeof defaultAccess === 'undefined') return alert("Error: defaultAccess tidak ditemukan!");
+            
+            settings.role_permissions = JSON.parse(JSON.stringify(defaultAccess));
+            
+            db.ref('bmt_data/config').update({ role_permissions: settings.role_permissions }, (error) => {
+                if (error) {
+                    alert("Gagal: " + error.message);
+                } else {
+                    alert("BERHASIL! Database sudah di-reset.");
+                    location.reload();
+                }
+            });
+        }
+        // --- FUNGSI SIMPAN MARGIN ---
+        function saveRealMargins() {
+            // 1. Pastikan wadah penyimpanan siap
+            if(!settings.margins) settings.margins = {};
+            if(!settings.margins_weekly) settings.margins_weekly = {};
+
+            // 2. Ambil angka dari kolom input (berdasarkan ID yang kita buat tadi)
+            settings.margins.sps = document.getElementById('set-sps-mo').value;
+            settings.margins_weekly.sps = document.getElementById('set-sps-wk').value;
+            
+            settings.margins.kms = document.getElementById('set-kms-mo').value;
+            settings.margins_weekly.kms = document.getElementById('set-kms-wk').value;
+            
+            settings.margins.gadai = document.getElementById('set-gadai-mo').value;
+            settings.margins_weekly.gadai = document.getElementById('set-gadai-wk').value;
+
+            // 3. Simpan permanen ke Cloud/Database
+            saveToCloud();
+
+            // 4. Kabari pengguna
+            alert("BERHASIL! Settingan Margin baru sudah tersimpan.");
+        }
+        // FUNGSI PINTAR: Cek Status (Revisi Mingguan 2 Hari, Bulanan 10 Hari)
+        function getStatusPeriode(x) {
+            // 1. Cek Lunas Total
+            if(x.payStatus === 'Lunas') return '<span class="badge" style="background:#d4edda; color:green">LUNAS TOTAL</span>';
+
+            // 2. Hitung Tanggal
+            // Jika nasabah lama belum punya nextDueDate, anggap 30 hari dari ID (tanggal daftar)
+            let dueDate = x.nextDueDate ? new Date(x.nextDueDate) : new Date(x.id + (30*24*60*60*1000));
+            let today = new Date();
+            
+            // Hitung selisih waktu
+            let diffTime = dueDate - today; 
+            // Konversi ke Hari (Pembulatan ke atas)
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+            // 3. TENTUKAN BATAS PERINGATAN (THRESHOLD)
+            // Jika Mingguan = 2 hari, Jika Bulanan = 10 hari
+            let batasPeringatan = (x.tenorType === 'Minggu') ? 2 : 10;
+
+            // 4. LOGIKA STATUS WARNA-WARNI
+            if (diffDays < 0) {
+                // Terlambat (Merah)
+                return `<span class="badge" style="background:#f8d7da; color:#721c24">Terlambat ${Math.abs(diffDays)} Hari</span>`;
+            } 
+            else if (diffDays <= batasPeringatan) {
+                // Masuk Masa Tagih (Kuning)
+                return `<span class="badge" style="background:#fff3cd; color:#856404; font-weight:bold;">BELUM LUNAS<br><small>H-${diffDays} Jatuh Tempo</small></span>`;
+            } 
+            else {
+                // Masih Aman (Hijau)
+                return `<span class="badge" style="background:#e8f5e9; color:#2e7d32">Lunas Periode Ini<br><small>Tempo: ${dueDate.toLocaleDateString()}</small></span>`;
+            }
+        }
+        // --- 1. FUNGSI BARU: HITUNG LABA BERSIH UNIT ---
+function getAvailableProfit(unitName) {
+    let marginPersen = settings.margins[unitName] || 0;
+    
+    // Hitung margin dari nasabah yang status bayarnya SUDAH LUNAS
+    let nasabahLunas = dbNasabah.filter(x => x.unit === unitName && x.payStatus === 'Lunas');
+    
+    let totalLabaKotor = 0;
+    nasabahLunas.forEach(n => {
+        let plaf = parseInt(n.plafond);
+        let profit = plaf * (marginPersen / 100);
+        totalLabaKotor += profit;
+    });
+
+    // Kurangi dengan yang sudah pernah dibagikan
+    let sudahDibagi = dbProfitFlow
+        .filter(p => p.targetUnit === unitName && p.status !== 'Rejected')
+        .reduce((a, b) => a + parseInt(b.amount), 0);
+
+    return totalLabaKotor - sudahDibagi;
+}
+
+// --- 2. FUNGSI BARU: UPDATE KOLOM RUPIAH OTOMATIS SAAT KETIK PERSEN ---
+function updateHitunganProfit() {
+    let unit = document.getElementById('pd-unit').value;
+    let persen = document.getElementById('pd-persen').value;
+    
+    let maxLaba = getAvailableProfit(unit);
+    
+    // Update Info Saldo di Card Atas
+    let infoEl = document.getElementById('info-laba-tersedia');
+    if(infoEl) infoEl.innerText = `Rp ${maxLaba.toLocaleString()}`;
+    
+    // Hitung Nominal
+    if(persen && persen > 0) {
+        let hasil = maxLaba * (persen / 100);
+        document.getElementById('pd-amt').value = Math.floor(hasil);
+    } else {
+        document.getElementById('pd-amt').value = 0;
+    }
+}
+        // Global variable untuk menyimpan data sementara
+let dataBayarTemp = {};
+
+function bukaFormBayar(id, nominal, tipe) {
+    document.getElementById('form-bayar-nasabah').classList.remove('hidden');
+    document.getElementById('nom-bayar-nasabah').value = nominal;
+    document.getElementById('judul-bayar').innerText = "Kirim Bukti " + tipe;
+    dataBayarTemp = { nasabahId: id, nominal: nominal, tipe: tipe };
+    document.getElementById('form-bayar-nasabah').scrollIntoView({ behavior: 'smooth' });
+}
+
+function previewBukti(input) {
+    if (input.files && input.files[0]) {
+        resizeImage(input.files[0], (res) => {
+            dataBayarTemp.foto = res;
+            document.getElementById('preview-container').innerHTML = `<img src="${res}" style="width: 150px; border: 1px solid #ddd; border-radius: 5px;">`;
+        }, 500);
+    }
+}
+
+function kirimBuktiKeAccounting() {
+    if(!dataBayarTemp.foto) return alert("Pilih foto bukti terlebih dahulu!");
+    
+    // Data dikirim ke array instruksi agar bisa dicek Accounting
+    dbInstruksi.push({
+        id: Date.now(),
+        toRole: 'ACCOUNTING',
+        sender: activeUser.user,
+        message: `KONFIRMASI BAYAR: Nasabah ${activeUser.user} mengirim bukti ${dataBayarTemp.tipe} sebesar Rp ${dataBayarTemp.nominal.toLocaleString()}`,
+        buktiFoto: dataBayarTemp.foto,
+        metaData: dataBayarTemp, // Simpan info teknis nasabah
+        date: Date.now(),
+        read: false
+    });
+    
+    saveToCloud();
+    alert("Bukti terkirim! Silakan tunggu Accounting memverifikasi pembayaran Anda.");
+    page('dashboard_nasabah');
+}
+        // --- FITUR NO 3: EKSEKUSI VERIFIKASI & NOTIFIKASI WA ---
+
+function terimaBayarNasabah(instruksiId) {
+    let idx = dbInstruksi.findIndex(v => v.id == instruksiId);
+    let dataInstruksi = dbInstruksi[idx];
+    let dataMeta = dataInstruksi.metaData;
+    
+    if(confirm(`Konfirmasi pembayaran Rp ${parseInt(dataMeta.nominal).toLocaleString()}?`)) {
+        // 1. Catat uang masuk ke Buku Kas Unit tempat Accounting bertugas
+        dbArusKas.push({
+            date: Date.now(),
+            unit: activeApp,
+            type: 'Masuk',
+            amount: dataMeta.nominal,
+            desc: `${dataMeta.tipe} a.n ${dataInstruksi.sender}`
+        });
+
+        // 2. Cari data nasabah untuk update status & ambil nomor WA
+        let nIdx = dbNasabah.findIndex(n => n.id == dataMeta.nasabahId);
+        let nasabahObj = dbNasabah[nIdx];
+
+        // Jika tipe pembayarannya adalah Pelunasan, maka status nasabah diganti Lunas
+        if(dataMeta.tipe === 'Pelunasan' && nIdx !== -1) {
+            dbNasabah[nIdx].payStatus = 'Lunas';
+        }
+
+        // 3. Susun Pesan WhatsApp Konfirmasi
+        let sapaan = nasabahObj.gender === 'P' ? 'Ibu' : 'Bapak';
+        let pesanWA = `*KONFIRMASI PEMBAYARAN - ${settings.nama}*\n\n` +
+                      `Alhamdulillah, ${sapaan} *${nasabahObj.nama}*,\n` +
+                      `Pembayaran *${dataMeta.tipe}* sebesar *Rp ${parseInt(dataMeta.nominal).toLocaleString()}* telah kami terima dan diverifikasi.\n\n` +
+                      `Status: BERHASIL\n` +
+                      `Tanggal: ${new Date().toLocaleString()}\n\n` +
+                      `Terima kasih telah menjadi mitra amanah kami.`;
+
+        // 4. Hapus data dari antrian verifikasi dan simpan ke Cloud
+        dbInstruksi.splice(idx, 1);
+        saveToCloud();
+        
+        // 5. Beri peringatan sukses dan buka jendela WhatsApp
+        alert("Pembayaran Berhasil Diverifikasi!");
+        openWA(nasabahObj.wa, pesanWA);
+        page('distribusi_insentif'); // Refresh halaman verifikasi
+    }
+}
+    </script>
+</body>
+</html>
