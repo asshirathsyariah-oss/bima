@@ -383,7 +383,7 @@
             struktur: { ketua: "H. Abdullah", sekretaris: "Siti Aminah", bendahara: "Rudi Hartono" }, 
             visi: "Menjadi Lembaga Keuangan Syariah Terdepan", misi: "1. Transaksi Syariah Murni\n2. Pelayanan Prima", 
             unit_leads: {sps: "Bpk. Budi", kms: "Ibu Ani", gadai: "Bpk. Cipto"}, 
-            shu: { profit: 150000000, p_tetap: 50, p_nasabah: 20 }, 
+            shu: { profit: 0, p_tetap: 50, p_nasabah: 20 }, 
             codes: { sps: 'SPS', kms: 'KMS', gadai: 'GS', haji: 'HJ' }, 
             margins: { sps: 10, kms: 20, gadai: 5, haji: 0 }, 
             margins_weekly: { sps: 3, kms: 5, gadai: 2, haji: 0 }, 
@@ -500,7 +500,7 @@
             } catch(e) { console.error("Firebase Error:", e); }
         }
 
-        function initDefaultData() { if(dbDana.length === 0) dbDana = [ {id: 1, date: Date.now(), unit: 'sps', amount: 1000000000, status: 'Approved', desc: 'Modal Awal'} ]; }
+        function initDefaultData() { if(dbDana.length === 0) dbDana = [ {id: 1, date: Date.now(), unit: 'sps', amount: , status: 'Approved', desc: 'Modal Awal'} ]; }
         
         async function saveToCloud() {
             const status = document.getElementById('sync-status'); 
