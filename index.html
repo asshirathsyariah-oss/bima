@@ -1445,7 +1445,7 @@
     </div>`;
 }
             else { b.innerHTML=`<div class="card">Fitur Aktif</div>`; }
-            
+            }
         function renderManagerArsip(container) {
             let active = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved' && x.payStatus !== 'Lunas');
             let lunas = dbNasabah.filter(x => x.unit === activeApp && x.payStatus === 'Lunas');
