@@ -1799,8 +1799,6 @@ function prosesPelunasan(id, totalHutangAwal) {
         }
         function delUser(i) { dbUsers.splice(i,1); saveToCloud(); page('users'); }
         function approve(id, nominal) { 
-            // 1. Hitung Total Modal Masuk dari Pusat
-        function approve(id, nominal) { 
             // --- 1. POPUP INPUT BIAYA ADMIN ---
             // Manager bisa isi 0 jika tidak ada, atau 50000, 100000, dst.
             let inputAdmin = prompt("Masukkan Biaya Administrasi (Masuk ke Kas Unit):", "0");
