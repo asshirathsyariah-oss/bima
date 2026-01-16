@@ -1404,7 +1404,6 @@
             else if(id==='sarpras_approval') { t.innerText="Approval Sarpras"; let rows=dbSarpras.map((s,i)=>`<tr><td data-label="Unit">${s.unit.toUpperCase()}</td><td data-label="Item">${s.item}</td><td data-label="Alasan">${s.alasan}</td><td data-label="Status"><span class="badge" style="background:${s.status=='Pending'?'#fff3cd':'#d4edda'}">${s.status}</span></td><td data-label="Aksi">${s.status=='Pending'?`<button class="btn btn-sm btn-success" onclick="accSarpras(${i})">ACC</button>`:''}</td></tr>`).join(''); b.innerHTML=`<div class="card"><h4>Pengajuan Unit</h4><div class="table-responsive"><table><thead><tr><th>Unit</th><th>Item</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`; }
             else if(id==='req_sarpras') { t.innerText="Ajukan Sarpras"; b.innerHTML=`<div class="card"><div class="form-vertical"><input id="sp-i" class="form-control" placeholder="Barang"><input id="sp-a" class="form-control" placeholder="Alasan"><button class="btn btn-primary" onclick="sendSarpras()">Kirim</button></div></div>`; }
             else { b.innerHTML=`<div class="card">Fitur Aktif</div>`; }
-        }
             else if(id === 'dompet_marketing') {
     t.innerText = "Dompet Insentif Saya";
     
