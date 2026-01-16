@@ -1798,51 +1798,53 @@ function prosesPelunasan(id, totalHutangAwal) {
             tempUserPhoto = ''; saveToCloud(); alert('User Added! Bisa langsung login.'); page('users'); 
         }
         function delUser(i) { dbUsers.splice(i,1); saveToCloud(); page('users'); }
+        // --- FUNGSI APPROVE YANG SUDAH DIPERBAIKI ---
         function approve(id, nominal) { 
-            // --- 1. POPUP INPUT BIAYA ADMIN ---
-            // Manager bisa isi 0 jika tidak ada, atau 50000, 100000, dst.
+            // 1. POPUP INPUT BIAYA ADMIN
             let inputAdmin = prompt("Masukkan Biaya Administrasi (Masuk ke Kas Unit):", "0");
             if (inputAdmin === null) return; // Batal jika tekan Cancel
             let biayaAdmin = parseInt(inputAdmin) || 0;
 
-            // --- 2. CEK LIMIT DANA (Sama seperti sebelumnya) ---
+            // 2. CEK LIMIT DANA
             let masuk = dbDana.filter(x => x.unit === activeApp && x.status === 'Approved').reduce((a,b)=>a+parseInt(b.amount),0); 
             let keluar = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved' && x.payStatus !== 'Lunas').reduce((a,b)=>a+parseInt(b.plafond),0); 
             let limitPersen = settings.limits[activeApp] || 100; 
             
-            // Rumus Sisa Kuota: (Modal + Angsuran Masuk + Pendapatan Admin) - (Pinjaman Cair)
-            // Agar simpel, kita pakai logika Limit Modal vs Pinjaman Aktif saja dulu
+            // Cek apakah limit tercapai
             if(keluar + parseInt(nominal) > masuk * (limitPersen / 100)) {
                 return alert(`GAGAL: Limit Kredit Unit ${limitPersen}% Sudah Penuh!\nTerpakai: Rp ${keluar.toLocaleString()}`);
             }
 
-            // --- 3. PROSES ACC ---
+            // 3. PROSES ACC DATA
             let i = dbNasabah.findIndex(x => x.id == id); 
+            if(i === -1) return alert("Data nasabah tidak ditemukan.");
             let d = dbNasabah[i];
             
             d.status = 'Approved'; 
             d.noSurat = `BIMA/${settings.codes[activeApp]}/${Math.floor(Math.random()*1000)}/2026`; 
             
-            // Generate Akun Login Nasabah
+            // 4. BUAT USER LOGIN NASABAH
             let nasabahUser = d.nama.replace(/\s/g, '').toLowerCase();
-            dbUsers.push({ user: nasabahUser, password: '123', role: 'nasabah', app: 'induk', photo: d.foto });
+            // Cek agar tidak duplikat user
+            if(!dbUsers.find(u => u.user === nasabahUser)) {
+                dbUsers.push({ user: nasabahUser, password: '123', role: 'nasabah', app: 'induk', photo: d.foto });
+            }
 
-            // --- 4. PENCATATAN KEUANGAN OTOMATIS (SISTEM KUNCI) ---
-            
-            // A. Uang Keluar (Pencairan Pinjaman)
+            // 5. PENCATATAN KEUANGAN (ARUS KAS)
+            // A. Uang Keluar (Pencairan ke Nasabah)
             dbArusKas.push({
                 date: Date.now(),
-                unit: activeApp,      // <--- KUNCI: Tetap di Unit (SPS/KMS/Gadai)
+                unit: activeApp,
                 type: 'Keluar',
                 amount: nominal,
                 desc: `Pencairan Pembiayaan a.n ${d.nama}`
             });
 
-            // B. Uang Masuk (Biaya Administrasi) -> MASUK KE KAS UNIT
+            // B. Uang Masuk (Biaya Admin)
             if(biayaAdmin > 0) {
                 dbArusKas.push({
                     date: Date.now(),
-                    unit: activeApp,  // <--- KUNCI: Masuk ke Dompet Unit, BUKAN PUSAT
+                    unit: activeApp,
                     type: 'Masuk',
                     amount: biayaAdmin,
                     desc: `Pendapatan Admin Akad a.n ${d.nama}`
@@ -1852,23 +1854,8 @@ function prosesPelunasan(id, totalHutangAwal) {
             saveToCloud(); 
             page('approval'); 
             
-            // Info ke Manager
             let danaDiterima = parseInt(nominal) - biayaAdmin;
-            alert(`BERHASIL DI-ACC!\n\nPlafond: Rp ${parseInt(nominal).toLocaleString()}\nAdmin Unit: Rp ${biayaAdmin.toLocaleString()}\n\nDana yang Diberikan ke Nasabah: Rp ${danaDiterima.toLocaleString()}`);
-        }
-
-            // Proses ACC
-            let i=dbNasabah.findIndex(x=>x.id==id); 
-            dbNasabah[i].status='Approved'; 
-            dbNasabah[i].noSurat=`BIMA/${settings.codes[activeApp]}/${Math.floor(Math.random()*1000)}/2026`; 
-            
-            // Buat User Login untuk Nasabah
-            let nasabahUser = dbNasabah[i].nama.replace(/\s/g, '').toLowerCase();
-            dbUsers.push({ user: nasabahUser, password: '123', role: 'nasabah', app: 'induk', photo: dbNasabah[i].foto });
-            
-            saveToCloud(); 
-            page('approval'); 
-            alert("BERHASIL: Pengajuan Disetujui.");
+            alert(`BERHASIL DI-ACC!\n\nPlafond: Rp ${parseInt(nominal).toLocaleString()}\nAdmin: Rp ${biayaAdmin.toLocaleString()}\n\nDiterima Nasabah: Rp ${danaDiterima.toLocaleString()}`);
         }
         function saveModal(st) { let u = document.getElementById('m-unit').value; let a = document.getElementById('m-amount').value; dbDana.push({id: Date.now(), date: Date.now(), unit: u, amount: a, status: st, desc: document.getElementById('m-desc').value}); saveToCloud(); alert('Saved'); page('distribusi_modal'); }
 // --- SCRIPT DARURAT (VERSI PASSWORD) ---
