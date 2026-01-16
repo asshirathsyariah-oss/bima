@@ -1445,11 +1445,9 @@
     </div>`;
 }
             else { 
-                // Kode ini memastikan kita tahu jika halaman tidak ditemukan
-                console.log("Halaman tidak ditemukan:", id);
-                b.innerHTML=`<div class="card">Fitur Aktif (Halaman '${id}' belum ada)</div>`; 
+                b.innerHTML=`<div class="card">Fitur Aktif</div>`; 
             }
-        } // <--- INI DIA! KURUNG PENUTUP YANG HILANG. JANGAN DIHAPUS.
+        }
 
         function renderManagerArsip(container) {
             let active = dbNasabah.filter(x => x.unit === activeApp && x.status === 'Approved' && x.payStatus !== 'Lunas');
